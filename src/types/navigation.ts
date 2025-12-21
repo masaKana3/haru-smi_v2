@@ -1,0 +1,15 @@
+export type Screen =
+  | "smi"
+  | "result"
+  | "dashboard"
+  | "daily"
+  | "detail"
+  | "history"
+  | "periodInput"
+  | "insight"
+  | "community"
+  | "postCreate"
+  | "thread"
+  | "diary"
+  | "postDetail"
+  | "profile";

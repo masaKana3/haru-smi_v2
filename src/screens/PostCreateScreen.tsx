@@ -1,0 +1,183 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { getTopics } from "../logic/communityLogic";
+import { Topic, Visibility } from "../types/community";
+import { useStorage } from "../hooks/useStorage";
+
+type Props = {
+  onBack: () => void;
+  onSaved: (postId: string) => void;
+  defaultTopicId?: string | null;
+  defaultType?: "thread" | "diary";
+  currentUserId: string;
+  editingPostId?: string | null;
+};
+
+export default function PostCreateScreen({
+  onBack,
+  onSaved,
+  defaultTopicId = null,
+  defaultType = "diary",
+  currentUserId,
+  editingPostId = null,
+}: Props) {
+  const topics = useMemo(() => getTopics(), []);
+  const storage = useStorage();
+  const isEditing = !!editingPostId;
+
+  const [type, setType] = useState<"thread" | "diary">(defaultType);
+  const [topicId, setTopicId] = useState<string | "">(defaultTopicId || "");
+  const [visibility, setVisibility] = useState<Visibility>("public");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isEditing && editingPostId) {
+      const loadPost = async () => {
+        const post = await storage.getPostById(editingPostId);
+        if (post) {
+          setTitle(post.title || "");
+          setContent(post.content);
+          setType(post.type);
+          setTopicId(post.topicId || "");
+          setVisibility(post.visibility);
+        }
+      };
+      loadPost();
+    }
+  }, [editingPostId, isEditing, storage]);
+
+  const handleSubmit = async () => {
+    setError(null);
+    if (!content.trim()) {
+      setError("内容を入力してください。");
+      return;
+    }
+    if (type === "thread" && !topicId) {
+      setError("テーマを選択してください。");
+      return;
+    }
+
+    const postData = {
+      type,
+      title: title.trim() || undefined,
+      content,
+      authorId: currentUserId,
+      visibility,
+      topicId: type === "thread" ? topicId : undefined,
+    };
+
+    const post = await storage.savePost({ ...postData, id: editingPostId || undefined });
+    onSaved(post.id);
+  };
+
+  return (
+    <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
+      <div className="w-full max-w-sm bg-white rounded-card p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="text-sm text-brandAccent hover:opacity-80 transition-opacity"
+          >
+            ← コミュニティ
+          </button>
+          <div className="text-md font-semibold">{isEditing ? "投稿を編集" : "投稿を作成"}</div>
+          <div className="w-10" />
+        </div>
+
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <div className="text-sm font-semibold">タイプ</div>
+            <div className="flex items-center gap-3 text-sm">
+              <label className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  checked={type === "diary"}
+                  onChange={() => setType("diary")}
+                />
+                日記
+              </label>
+              <label className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  checked={type === "thread"}
+                  onChange={() => setType("thread")}
+                />
+                テーマへの投稿
+              </label>
+            </div>
+          </div>
+
+          {type === "thread" && (
+            <div className="space-y-1">
+              <div className="text-sm font-semibold">テーマを選択</div>
+              <select
+                value={topicId}
+                onChange={(e) => setTopicId(e.target.value)}
+                className="w-full border border-brandAccentAlt rounded-card px-3 py-2 text-sm"
+              >
+                <option value="">選択してください</option>
+                {topics.map((t: Topic) => (
+                  <option key={t.id} value={t.id}>
+                    {t.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <div className="text-sm font-semibold">公開範囲</div>
+            <div className="flex items-center gap-3 text-sm">
+              <label className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  checked={visibility === "public"}
+                  onChange={() => setVisibility("public")}
+                />
+                公開
+              </label>
+              <label className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  checked={visibility === "private"}
+                  onChange={() => setVisibility("private")}
+                />
+                非公開
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-sm font-semibold">タイトル（任意）</div>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full border border-brandAccentAlt rounded-card px-3 py-2 text-sm"
+              placeholder="例）今日の気づき"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-sm font-semibold">内容</div>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full border border-brandAccentAlt rounded-card px-3 py-2 text-sm min-h-[140px]"
+              placeholder="感じたことを書いてみましょう"
+            />
+          </div>
+
+          {error && <div className="text-xs text-red-500">{error}</div>}
+
+          <button
+            onClick={handleSubmit}
+            className="w-full py-3 bg-brandAccent text-white rounded-button text-sm"
+          >
+            {isEditing ? "更新する" : "投稿する"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
