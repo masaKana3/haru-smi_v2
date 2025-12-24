@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { getOptionsForItemId } from "../utils/DailyCheckUtils";
 import {
+  DailyAnswers,
   DailyAnswerValue,
   DailyQuestion,
   DailyRecord,
@@ -23,7 +24,7 @@ type Props = {
 export default function DailyCheckScreen({ dailyItems, onSave, onCancel }: Props) {
   const [index, setIndex] = useState<number>(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [answers, setAnswers] = useState<Record<string, DailyAnswerValue>>({});
+  const [answers, setAnswers] = useState<DailyAnswers>({});
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   // 初期メッセージ
@@ -76,7 +77,7 @@ export default function DailyCheckScreen({ dailyItems, onSave, onCancel }: Props
   const options: DailyAnswerValue[] = currentItem ? getOptionsForItemId(currentItem.id) : [];
 
   const handleSelect = (option: DailyAnswerValue) => {
-    if (!currentItem) return;
+    if (!currentItem || typeof option !== 'string') return;
 
     const newAnswers = {
       ...answers,
@@ -129,6 +130,48 @@ export default function DailyCheckScreen({ dailyItems, onSave, onCancel }: Props
     }
   };
 
+  const handleTemperatureSubmit = (temp: string) => {
+    if (!currentItem) return;
+
+    const newAnswers = {
+      ...answers,
+      [currentItem.id]: temp,
+    };
+    setAnswers(newAnswers);
+
+    setMessages((prev) => [
+      ...prev,
+      { id: prev.length + 1, from: "user", text: `${temp} ℃` },
+    ]);
+
+    const nextIndex = index + 1;
+
+    if (nextIndex < dailyItems.length) {
+      const nextItem = dailyItems[nextIndex];
+      setIndex(nextIndex);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          from: "bot",
+          text: nextItem.question,
+        },
+      ]);
+    } else {
+      // 最後の質問
+      const today = new Date();
+      const dateStr = today.toISOString().slice(0, 10);
+      const dataToSave: DailyRecord = { date: dateStr, answers: newAnswers, items: dailyItems };
+      setMessages((prev) => [
+        ...prev,
+        { id: prev.length + 1, from: "bot", text: "教えてくれてありがとうございます。今日の記録を保存しますね。" },
+      ]);
+      if (onSave) {
+        onSave(dataToSave);
+      }
+    }
+  };
+
   return (
     <div className="w-full h-screen bg-brandBg flex flex-col items-center text-brandText">
       <div className="w-full max-w-sm flex-1 flex flex-col p-4 overflow-hidden">
@@ -151,16 +194,53 @@ export default function DailyCheckScreen({ dailyItems, onSave, onCancel }: Props
             <ChatBubble key={m.id} from={m.from} text={m.text} />
           ))}
 
-          {/* 会話内の選択肢（縦並び） */}
-          {currentItem && options.length > 0 && (
+          {/* 選択肢 or 数値入力 */}
+          {currentItem && currentItem.id !== "temperature" && options.length > 0 && (
             <div className="mb-4 flex justify-start">
               <ChoiceButtons options={options} onSelect={handleSelect} />
             </div>
           )}
 
+          {currentItem && currentItem.id === "temperature" && (
+            <TemperatureInput onSubmit={handleTemperatureSubmit} />
+          )}
+
           <div ref={chatEndRef} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function TemperatureInput({ onSubmit }: { onSubmit: (temp: string) => void }) {
+  const [temp, setTemp] = useState("");
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSubmit();
+    }
+  };
+
+  const handleSubmit = () => {
+    if (temp.trim()) {
+      onSubmit(temp.trim());
+    }
+  };
+
+  return (
+    <div className="ml-10 flex items-center gap-2 max-w-[70%]">
+      <input
+        type="number"
+        step="0.01"
+        value={temp}
+        onChange={(e) => setTemp(e.target.value)}
+        onKeyPress={handleKeyPress}
+        className="w-full border border-brandAccentAlt rounded-bubble px-3 py-2 text-sm"
+        placeholder="36.50"
+      />
+      <button onClick={handleSubmit} className="text-xs px-3 py-2 bg-brandAccent text-white rounded-button">
+        決定
+      </button>
     </div>
   );
 }

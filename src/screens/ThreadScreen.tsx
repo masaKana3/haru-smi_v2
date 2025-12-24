@@ -9,6 +9,7 @@ type Props = {
   onBack: () => void;
   onCreatePost: (topicId: string) => void;
   onOpenPostDetail: (postId: string) => void;
+  currentUserId: string;
 };
 
 export default function ThreadScreen({
@@ -16,6 +17,7 @@ export default function ThreadScreen({
   onBack,
   onCreatePost,
   onOpenPostDetail,
+  currentUserId,
 }: Props) {
   const storage = useStorage();
   const topics = useMemo(() => getTopics(), []);
@@ -32,7 +34,7 @@ export default function ThreadScreen({
   }, [topicId]);
 
   const handleLike = async (postId: string) => {
-    await storage.likePost(postId);
+    await storage.likePost(postId, currentUserId);
     loadPosts();
   };
 

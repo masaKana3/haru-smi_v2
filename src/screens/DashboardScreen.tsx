@@ -11,12 +11,13 @@ import CommunityPreviewCard from "../components/community/CommunityPreviewCard";
 import { fetchWeather, WeatherData, WeatherError } from "../api/weather";
 import { loadMenstrualMarkers } from "../logic/calendar/menstrualMarkers";
 import { generateNurseAdvice } from "../logic/advice/nurseAdvice";
+import { useStorage } from "../hooks/useStorage";
+import { predictNextPeriod, PredictionResult } from "../logic/core/periodPrediction";
 
 type Props = {
   total: number | null;
   onDailyCheck: () => void;
   todayDaily: DailyRecord | null;
-  onDetail: () => void;
   onSelectDate: (date: string) => void;
   selectedDate: string;
   onShowHistory: () => void;
@@ -24,6 +25,7 @@ type Props = {
   onStartPeriodInput: () => void;
   onOpenInsight: () => void;
   onOpenCommunity: () => void;
+  onOpenSettings: () => void;
   latestPeriod: PeriodRecord | null;
 };
 
@@ -80,7 +82,6 @@ export default function DashboardScreen({
   total, 
   onDailyCheck, 
   todayDaily, 
-  onDetail,
   onSelectDate,   // ← 追加①
   selectedDate,   // ← 追加②
   onShowHistory,   // ← 追加③
@@ -88,8 +89,12 @@ export default function DashboardScreen({
   onStartPeriodInput, // ← 追加
   onOpenInsight,     // ← ★ これを追加！
   onOpenCommunity,
+  onOpenSettings,
   latestPeriod,
  }: Props) {
+  const storage = useStorage();
+  const [username, setUsername] = useState("ユーザー");
+  const [periodPrediction, setPeriodPrediction] = useState<PredictionResult | null>(null);
   const todayStr = new Date().toISOString().slice(0, 10);
   const hasTodayRecord = Boolean(
     todayDaily && todayDaily.date === todayStr && todayDaily.answers
@@ -163,6 +168,25 @@ export default function DashboardScreen({
     };
   }, []);
 
+  useEffect(() => {
+    const loadProfile = async () => {
+      const profile = await storage.loadProfile();
+      if (profile?.nickname) {
+        setUsername(profile.nickname);
+      }
+    };
+    loadProfile();
+  }, [storage]);
+
+  useEffect(() => {
+    const loadPrediction = async () => {
+      const history = await storage.loadAllPeriods();
+      const result = predictNextPeriod(history);
+      setPeriodPrediction(result);
+    };
+    loadPrediction();
+  }, [storage, latestPeriod]); // latestPeriodが変わったら再計算
+
   // スコア表示用の安全な値（NaN対策）
   const safeTotal =
     typeof total === "number" && !Number.isNaN(total)
@@ -171,16 +195,6 @@ export default function DashboardScreen({
 
   const handleSelectDate = (date: string) => {
     onSelectDate(date);
-    const today = new Date().toISOString().slice(0, 10);
-    if (date === today) {
-      if (hasTodayRecord) {
-        onDetail();
-      } else {
-        onDailyCheck();
-      }
-      return;
-    }
-    onDetail();
   };
 
   return (
@@ -188,8 +202,27 @@ export default function DashboardScreen({
       <div className="w-full max-w-sm space-y-5">
 
         {/* あいさつ */}
-        <div className="text-lg font-semibold text-center">
-          こんにちは ユーザーさん
+        <div className="relative flex items-center justify-center">
+          <div className="text-lg font-semibold">
+            こんにちは {username}さん
+          </div>
+          <button
+            onClick={onOpenSettings}
+            className="absolute right-0 p-2 text-brandMuted hover:text-brandAccent transition-colors"
+            aria-label="設定"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-6 h-6"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
         </div>
 
         <CalendarGrid
@@ -200,6 +233,27 @@ export default function DashboardScreen({
           onSelectDate={handleSelectDate}
           initialMonth={initialMonth}
         />
+
+        {/* 生理予測カード */}
+        {periodPrediction && periodPrediction.nextPeriodDate && (
+          <Card className="p-4 flex items-center justify-between shadow-sm border border-brandAccentAlt/20">
+            <div>
+              <div className="text-xs text-brandMuted mb-1">次の生理予定日</div>
+              <div className="text-lg font-bold text-brandText">
+                {formatJPDate(periodPrediction.nextPeriodDate)}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-brandMuted mb-1">あと</div>
+              <div className="text-xl font-bold text-brandAccent">
+                {periodPrediction.daysUntilNext !== null && periodPrediction.daysUntilNext < 0
+                  ? "予定日超過"
+                  : periodPrediction.daysUntilNext}
+                <span className="text-sm text-brandText font-normal ml-1">日</span>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* 現在の更年期指数カード（円グラフ） */}
         <Card

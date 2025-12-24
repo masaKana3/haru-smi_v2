@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useNavigation } from "./useNavigation";
 
 // useNavigationの返り値の型を推論
@@ -36,11 +36,25 @@ export function useCommunityNavigation(nav: Navigation) {
     nav.goBack("community");
   }, [nav]);
 
-  return {
+  // ★コミュニティ：他のユーザーのプロフィール画面へ
+  const handleOpenUserProfile = useCallback((userId: string) => {
+    nav.setViewingUserId(userId);
+    nav.navigate("profile");
+  }, [nav]);
+
+  return useMemo(() => ({
     handleCreatePost,
     handleOpenThread,
     handleOpenPostDetail,
     handleEditPost,
     handlePostDeleted,
-  };
+    handleOpenUserProfile,
+  }), [
+    handleCreatePost,
+    handleOpenThread,
+    handleOpenPostDetail,
+    handleEditPost,
+    handlePostDeleted,
+    handleOpenUserProfile,
+  ]);
 }

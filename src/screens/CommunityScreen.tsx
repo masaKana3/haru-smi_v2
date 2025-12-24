@@ -9,8 +9,8 @@ type Props = {
   onCreatePost: (opts?: { topicId?: string; type?: "thread" | "diary" }) => void;
   onOpenThread: (topicId: string) => void;
   onOpenDiary: () => void;
-  onOpenProfile: () => void;
   onOpenPostDetail: (postId: string) => void;
+  currentUserId: string;
 };
 
 export default function CommunityScreen({
@@ -18,8 +18,8 @@ export default function CommunityScreen({
   onCreatePost,
   onOpenThread,
   onOpenDiary,
-  onOpenProfile,
   onOpenPostDetail,
+  currentUserId,
 }: Props) {
   const storage = useStorage();
   const topics = useMemo(() => getTopics(), []);
@@ -35,7 +35,7 @@ export default function CommunityScreen({
   }, []);
 
   const handleLike = async (postId: string) => {
-    await storage.likePost(postId);
+    await storage.likePost(postId, currentUserId);
     loadPosts();
   };
 
@@ -50,12 +50,6 @@ export default function CommunityScreen({
             戻る
           </button>
           <div className="text-md font-semibold">コミュニティ</div>
-          <button
-            onClick={onOpenProfile}
-            className="text-xs text-brandAccent underline"
-          >
-            プロフィール
-          </button>
         </div>
 
         <div className="bg-white rounded-card p-4 shadow-sm space-y-3">

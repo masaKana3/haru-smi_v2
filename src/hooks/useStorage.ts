@@ -1,12 +1,21 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { DailyRecord } from "../types/daily";
 import { PeriodRecord } from "../types/period";
-import { SMIConvertedAnswer } from "../types/smi";
+import { SMIConvertedAnswer, SMIRecord } from "../types/smi";
 import { Post, Comment, Visibility, Report } from "../types/community";
+import { UserProfile, UserAuth } from "../types/user";
 
 const POSTS_KEY = "haru_posts";
 const COMMENTS_KEY = "haru_comments";
 const REPORTS_KEY = "haru_reports";
+const LIKES_KEY = "haru_likes";
+
+async function hashPassword(password: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 export function useStorage() {
   // SMIデータの保存
@@ -36,6 +45,39 @@ export function useStorage() {
         }
       }
       resolve({ done, total, answers });
+    });
+  }, []);
+
+  // SMI履歴の保存
+  const saveSMIHistory = useCallback(async (total: number, answers: SMIConvertedAnswer[]) => {
+    return new Promise<void>((resolve) => {
+      const raw = localStorage.getItem("haru_smi_history");
+      const history: SMIRecord[] = raw ? JSON.parse(raw) : [];
+      const newRecord: SMIRecord = {
+        date: new Date().toISOString(),
+        total,
+        answers,
+      };
+      localStorage.setItem("haru_smi_history", JSON.stringify([newRecord, ...history]));
+      resolve();
+    });
+  }, []);
+
+  // SMI履歴の読み込み
+  const loadSMIHistory = useCallback(async (): Promise<SMIRecord[]> => {
+    return new Promise((resolve) => {
+      const raw = localStorage.getItem("haru_smi_history");
+      if (!raw) {
+        resolve([]);
+        return;
+      }
+      try {
+        const history = JSON.parse(raw) as SMIRecord[];
+        history.sort((a, b) => (a.date < b.date ? 1 : -1));
+        resolve(history);
+      } catch {
+        resolve([]);
+      }
     });
   }, []);
 
@@ -83,6 +125,23 @@ export function useStorage() {
         .filter((record): record is DailyRecord => record !== null)
         .sort((a, b) => (a.date < b.date ? 1 : -1));
       resolve(records);
+    });
+  }, []);
+
+  // 生理記録の読み込み（全件）
+  const loadAllPeriods = useCallback(async (): Promise<PeriodRecord[]> => {
+    return new Promise((resolve) => {
+      const raw = localStorage.getItem("haru_periods");
+      if (!raw) {
+        resolve([]);
+        return;
+      }
+      try {
+        const list = JSON.parse(raw) as PeriodRecord[];
+        resolve(list);
+      } catch {
+        resolve([]);
+      }
     });
   }, []);
 
@@ -212,18 +271,50 @@ export function useStorage() {
     });
   }, []);
 
-  const likePost = useCallback(async (id: string): Promise<Post | null> => {
+  const likePost = useCallback(async (id: string, userId: string): Promise<Post | null> => {
     return new Promise((resolve) => {
+      // 1. いいね情報の更新 (Toggle)
+      const rawLikes = localStorage.getItem(LIKES_KEY);
+      const likes: { userId: string; postId: string }[] = rawLikes ? JSON.parse(rawLikes) : [];
+      
+      const existingIndex = likes.findIndex((l) => l.userId === userId && l.postId === id);
+      let isAdding = true;
+
+      if (existingIndex !== -1) {
+        likes.splice(existingIndex, 1); // 解除
+        isAdding = false;
+      } else {
+        likes.push({ userId, postId: id }); // 追加
+        isAdding = true;
+      }
+      localStorage.setItem(LIKES_KEY, JSON.stringify(likes));
+
+      // 2. 投稿のいいね数を更新
       const raw = localStorage.getItem(POSTS_KEY);
       const posts: Post[] = raw ? JSON.parse(raw) : [];
       const index = posts.findIndex((p) => p.id === id);
       if (index !== -1) {
-        posts[index].likes += 1;
+        posts[index].likes = isAdding ? posts[index].likes + 1 : Math.max(0, posts[index].likes - 1);
         localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
         resolve(posts[index]);
       } else {
         resolve(null);
       }
+    });
+  }, []);
+
+  const listLikedPosts = useCallback(async (userId: string): Promise<Post[]> => {
+    return new Promise((resolve) => {
+      const rawLikes = localStorage.getItem(LIKES_KEY);
+      const likes: { userId: string; postId: string }[] = rawLikes ? JSON.parse(rawLikes) : [];
+      const myLikedPostIds = likes.filter((l) => l.userId === userId).map((l) => l.postId);
+
+      const rawPosts = localStorage.getItem(POSTS_KEY);
+      const posts: Post[] = rawPosts ? JSON.parse(rawPosts) : [];
+      
+      const result = posts.filter((p) => myLikedPostIds.includes(p.id));
+      // 新しい順にソート
+      resolve(result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     });
   }, []);
 
@@ -294,22 +385,169 @@ export function useStorage() {
     });
   }, []);
 
-  return {
+  // === User Profile ===
+
+  const saveProfile = useCallback(async (profile: UserProfile, userId?: string) => {
+    return new Promise<void>((resolve) => {
+      // 現在のユーザーIDを取得（引数がない場合）
+      const targetId = userId || localStorage.getItem("haru_current_user_id");
+      if (!targetId) return resolve();
+
+      const key = `haru_profile_${targetId}`;
+      localStorage.setItem(key, JSON.stringify(profile));
+      resolve();
+    });
+  }, []);
+
+  const loadProfile = useCallback(async (userId?: string): Promise<UserProfile | null> => {
+    return new Promise((resolve) => {
+      const targetId = userId || localStorage.getItem("haru_current_user_id");
+      if (!targetId) {
+        resolve(null);
+        return;
+      }
+
+      const key = `haru_profile_${targetId}`;
+      const raw = localStorage.getItem(key);
+      
+      if (!raw) {
+        // 旧方式（haru_user_profile）からの移行用フォールバック
+        const legacyRaw = localStorage.getItem("haru_user_profile");
+        if (legacyRaw && !userId) {
+           resolve(JSON.parse(legacyRaw) as UserProfile);
+           return;
+        }
+        resolve(null); 
+        return;
+      }
+      try {
+        resolve(JSON.parse(raw) as UserProfile);
+      } catch {
+        resolve(null);
+      }
+    });
+  }, []);
+
+  // 任意のユーザーIDのプロフィールを取得（エイリアス）
+  const getUserProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
+    return loadProfile(userId);
+  }, [loadProfile]);
+
+  // === Authentication ===
+
+  const registerUser = useCallback(async (email: string, password: string): Promise<string> => {
+    const hashedPassword = await hashPassword(password);
+    return new Promise((resolve, reject) => {
+      const raw = localStorage.getItem("haru_users");
+      const users: UserAuth[] = raw ? JSON.parse(raw) : [];
+
+      if (users.some((u) => u.email === email)) {
+        reject(new Error("このメールアドレスは既に使用されています。"));
+        return;
+      }
+
+      const newUser: UserAuth = {
+        id: `u_${Math.random().toString(36).slice(2, 9)}`,
+        email,
+        passwordHash: hashedPassword,
+      };
+
+      localStorage.setItem("haru_users", JSON.stringify([...users, newUser]));
+      resolve(newUser.id);
+    });
+  }, []);
+
+  const loginUser = useCallback(async (email: string, password: string): Promise<string | null> => {
+    const hashedPassword = await hashPassword(password);
+    return new Promise((resolve) => {
+      const raw = localStorage.getItem("haru_users");
+      const users: UserAuth[] = raw ? JSON.parse(raw) : [];
+      const user = users.find((u) => u.email === email && u.passwordHash === hashedPassword);
+      resolve(user ? user.id : null);
+    });
+  }, []);
+
+  const checkEmailExists = useCallback(async (email: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const raw = localStorage.getItem("haru_users");
+      const users: UserAuth[] = raw ? JSON.parse(raw) : [];
+      resolve(users.some((u) => u.email === email));
+    });
+  }, []);
+
+  const resetPassword = useCallback(async (email: string, newPassword: string): Promise<void> => {
+    const hashedPassword = await hashPassword(newPassword);
+    return new Promise((resolve, reject) => {
+      const raw = localStorage.getItem("haru_users");
+      const users: UserAuth[] = raw ? JSON.parse(raw) : [];
+      const index = users.findIndex((u) => u.email === email);
+
+      if (index === -1) {
+        reject(new Error("ユーザーが見つかりません。"));
+        return;
+      }
+
+      users[index].passwordHash = hashedPassword;
+      localStorage.setItem("haru_users", JSON.stringify(users));
+      resolve();
+    });
+  }, []);
+
+  return useMemo(() => ({
     saveSMIResult,
     loadSMIResult,
+    saveSMIHistory,
+    loadSMIHistory,
     saveDailyRecord,
     loadDailyRecord,
     loadAllDailyRecords,
+    loadAllPeriods,
     getLatestPeriod,
     listPosts,
     getPostById,
     savePost,
     deletePost,
     likePost,
+    listLikedPosts,
     loadCommentsByPostId,
     saveComment,
     likeComment,
     deleteComment,
     saveReport,
-  };
+    saveProfile,
+    loadProfile,
+    getUserProfile,
+    registerUser,
+    loginUser,
+    checkEmailExists,
+    resetPassword,
+  }), [
+    saveSMIResult,
+    loadSMIResult,
+    saveSMIHistory,
+    loadSMIHistory,
+    saveDailyRecord,
+    loadDailyRecord,
+    loadAllDailyRecords,
+    loadAllPeriods,
+    getLatestPeriod,
+    listPosts,
+    getPostById,
+    savePost,
+    deletePost,
+    likePost,
+    listLikedPosts,
+    loadCommentsByPostId,
+    saveComment,
+    likeComment,
+    deleteComment,
+    saveReport,
+    saveProfile,
+    loadProfile,
+    getUserProfile,
+    registerUser,
+    loginUser,
+    checkEmailExists,
+    resetPassword,
+  ]);
 }

@@ -3,6 +3,12 @@ import { DailyRecord } from "../types/daily";
 import { generateNurseAdvice } from "../logic/advice/nurseAdvice";
 import { getOrGenerateRecipe } from "../logic/advice/recipeSuggestion";
 import { fetchWeather, WeatherData, WeatherError } from "../api/weather";
+import { useStorage } from "../hooks/useStorage";
+import { SMIRecord } from "../types/smi";
+import SMIScoreChart from "../components/smi/SMIScoreChart";
+import TemperatureChart from "../components/daily/TemperatureChart";
+import { getCyclePhase, PhaseInfo } from "../logic/core/periodPrediction";
+import CyclePhaseAnalysis from "../components/insight/CyclePhaseAnalysis";
 
 type Props = {
   todayDaily: DailyRecord | null;
@@ -10,11 +16,15 @@ type Props = {
 };
 
 export default function InsightScreen({ todayDaily, onBack }: Props) {
+  const storage = useStorage();
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [weatherError, setWeatherError] = useState<WeatherError | null>(null);
   const [weatherLoading, setWeatherLoading] = useState<boolean>(false);
   const [recipe, setRecipe] = useState<string | null>(null);
   const [recipeLoading, setRecipeLoading] = useState<boolean>(false);
+  const [smiHistory, setSmiHistory] = useState<SMIRecord[]>([]);
+  const [dailyHistory, setDailyHistory] = useState<DailyRecord[]>([]);
+  const [phaseInfo, setPhaseInfo] = useState<PhaseInfo | null>(null);
 
   // -------------------------
   // 天気データ取得
@@ -97,6 +107,39 @@ export default function InsightScreen({ todayDaily, onBack }: Props) {
     };
   }, [todayDaily?.answers, weatherData]);   // ← JSON.stringify は絶対に不要！！
 
+  // -------------------------
+  // SMI履歴読み込み
+  // -------------------------
+  useEffect(() => {
+    const load = async () => {
+      const history = await storage.loadSMIHistory();
+      setSmiHistory(history);
+    };
+    load();
+  }, [storage]);
+
+  // -------------------------
+  // 日々の記録履歴読み込み（体温グラフ用）
+  // -------------------------
+  useEffect(() => {
+    const load = async () => {
+      const records = await storage.loadAllDailyRecords();
+      setDailyHistory(records);
+    };
+    load();
+  }, [storage]);
+
+  // -------------------------
+  // 生理周期フェーズ取得
+  // -------------------------
+  useEffect(() => {
+    const load = async () => {
+      const latestPeriod = await storage.getLatestPeriod();
+      const info = getCyclePhase(latestPeriod?.start || null);
+      setPhaseInfo(info);
+    };
+    load();
+  }, [storage]);
 
   // -------------------------
   // ★ RECIPE 状態ログ（追加）
@@ -136,6 +179,23 @@ export default function InsightScreen({ todayDaily, onBack }: Props) {
         </div>
 
         <h1 className="text-lg font-semibold">今日の詳しいアドバイス</h1>
+
+        {phaseInfo && (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold text-brandText">🔄 現在の周期リズム</div>
+            <CyclePhaseAnalysis phaseInfo={phaseInfo} />
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <div className="text-sm font-semibold text-brandText">📈 更年期指数の推移</div>
+          <SMIScoreChart history={smiHistory} />
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-sm font-semibold text-brandText">🌡️ 基礎体温の推移</div>
+          <TemperatureChart records={dailyHistory} />
+        </div>
 
         {/* ★removed: condition advice UI */}
 

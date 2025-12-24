@@ -1,20 +1,52 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Comment } from "../types/community";
 import { toRelativeTime } from "../utils/dateUtils";
+import { useStorage } from "../hooks/useStorage";
 
 type Props = {
   comment: Comment;
   onLike?: () => void;
+  onOpenProfile?: (userId: string) => void;
   onDelete?: () => void;
   onReport?: () => void;
   liked?: boolean;
 };
 
-export default function CommentCard({ comment, onLike, onDelete, onReport, liked }: Props) {
+export default function CommentCard({
+  comment,
+  onLike,
+  onOpenProfile,
+  onDelete,
+  onReport,
+  liked,
+}: Props) {
+  const storage = useStorage();
+  const [authorName, setAuthorName] = useState("ユーザー");
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadAuthor = async () => {
+      const profile = await storage.getUserProfile(comment.authorId);
+      if (isMounted && profile?.nickname) {
+        setAuthorName(profile.nickname);
+      }
+    };
+    loadAuthor();
+    return () => { isMounted = false; };
+  }, [storage, comment.authorId]);
+
   return (
     <div className="w-full bg-brandBg rounded-card px-3 py-2 space-y-1">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-semibold text-brandText">ユーザー</div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenProfile?.(comment.authorId);
+          }}
+          className="text-sm font-semibold text-brandText hover:underline"
+        >
+          {authorName}
+        </button>
         <div className="flex items-center gap-2">
           {onDelete && (
             <button onClick={onDelete} className="text-xs text-red-500 underline">

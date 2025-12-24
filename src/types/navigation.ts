@@ -12,4 +12,10 @@ export type Screen =
   | "thread"
   | "diary"
   | "postDetail"
-  | "profile";
+  | "profile"
+  | "settings"
+  | "profileEdit"
+  | "login"
+  | "signup"
+  | "forgotPassword"
+  | "resetPassword";

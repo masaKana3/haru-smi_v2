@@ -63,7 +63,7 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
   };
 
   const handleLikePost = async () => {
-    await storage.likePost(post.id);
+    await storage.likePost(post.id, currentUserId);
     load();
   };
 

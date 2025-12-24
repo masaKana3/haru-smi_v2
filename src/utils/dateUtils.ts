@@ -1,5 +1,5 @@
-export function toRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
+export function toRelativeTime(dateInput: string | number): string {
+  const date = new Date(dateInput);
   const now = new Date();
   const diffInSeconds = (now.getTime() - date.getTime()) / 1000;
 

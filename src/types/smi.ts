@@ -34,3 +34,9 @@ export interface DailyQuestionDefinition extends Omit<DailyQuestion, "choices"> 
   choices?: string[];
   id: DailyQuestionId;
 }
+
+export interface SMIRecord {
+  date: string;
+  total: number;
+  answers: SMIConvertedAnswer[];
+}

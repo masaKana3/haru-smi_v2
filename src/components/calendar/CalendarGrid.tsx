@@ -159,17 +159,19 @@ export default function CalendarGrid({
           const currentMonthClass = day.isCurrentMonth
             ? "text-brandText border-transparent"
             : "text-brandMuted/60 border-transparent";
-          const backgroundClass = isToday
-            ? hasRecord
-              ? "bg-brandAccentAlt"
-              : "bg-white"
+
+          // 1. 背景色の決定ロジックを改善
+          const backgroundClass = isPeriodDay
+            ? "bg-pink-50" // 2. 生理日を薄いピンクに
             : hasRecord
-            ? "bg-brandAccentAlt"
-            : "bg-brandPanel";
+            ? "bg-brandAccentAlt/30" // 記録日は薄い紫に
+            : "bg-brandPanel"; // デフォルト
+
           const selectedClass =
-            isSelected && !isToday ? "ring-2 ring-brandAccent" : "";
+            isSelected ? "ring-2 ring-brandAccent" : "";
+          // 1. 今日のスタイルを調整
           const todayClass = isToday
-            ? "border-2 border-brandAccent text-brandAccent font-bold ring-2 ring-brandAccent ring-offset-2 ring-offset-brandPanel"
+            ? "border-2 border-brandAccent"
             : "";
           const futureClass = isFuture ? "opacity-40 pointer-events-none" : "";
 
@@ -180,7 +182,12 @@ export default function CalendarGrid({
               onClick={() => handleSelect(day)}
               className={`${cellBase} ${currentMonthClass} ${backgroundClass} ${selectedClass} ${todayClass} ${futureClass}`}
             >
-              <div className="text-sm font-medium">{day.date.getDate()}</div>
+              <div className={`text-sm font-medium ${isToday ? 'text-brandAccent font-bold' : ''}`}>{day.date.getDate()}</div>
+
+              {/* 3. 体調の可視化（ドット） */}
+              {hasRecord && entry.severityColor && (
+                <div className={`absolute bottom-2 w-2 h-2 rounded-full ${entry.severityColor}`} />
+              )}
 
               {isStartDay && (
                 <span className="absolute top-1 right-1 text-[13px] z-10" aria-label="生理開始">

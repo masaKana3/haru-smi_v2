@@ -12,10 +12,11 @@ export type Post = {
   title?: string;
   content: string;
   authorId: string;
-  createdAt: string;
+  createdAt: string | number;
   visibility: Visibility;
   topicId?: string;
   likes: number;
+  comments?: Comment[];
 };
 
 export type Comment = {

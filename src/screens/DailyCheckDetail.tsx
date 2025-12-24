@@ -15,6 +15,7 @@ const LABELS: Record<string, string> = {
   headache: "頭痛・めまい・吐き気",
   palpitation: "動悸・息切れ",
   bleeding: "出血",
+  temperature: "基礎体温",
 };
 
 type Props = {
@@ -72,7 +73,9 @@ export default function DailyCheckDetail({
                 <div key={key}>
                   <div className="text-sm text-brandMutedAlt mb-1">{label}</div>
                   <div className="w-full bg-brandInput py-2 px-3 rounded-input text-neutralMuted text-sm">
-                    {data.answers[key]}
+                    {key === 'temperature' && data.answers[key]
+                      ? `${data.answers[key]} ℃`
+                      : data.answers[key]}
                   </div>
                 </div>
               );
@@ -96,7 +99,7 @@ export default function DailyCheckDetail({
   const answers = data.answers;
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const handleSelect = (key: string, value: DailyAnswerValue) => {
+  const handleSelect = (key: string, value: DailyAnswerValue | string) => {
     const updated: DailyRecord = {
       ...data,
       answers: { ...data.answers, [key]: value },
@@ -126,27 +129,39 @@ export default function DailyCheckDetail({
                   {label}
                 </div>
 
-                {/* 現在の値（クリックで選択肢展開） */}
-                <button
-                  onClick={() => setExpandedId(expandedId === key ? null : key)}
-                  className="w-full bg-brandInput py-2 px-3 rounded-input text-left"
-                >
-                  {answers[key]}
-                </button>
+                {key === 'temperature' ? (
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={answers[key] || ''}
+                    onChange={(e) => handleSelect(key, e.target.value)}
+                    className="w-full bg-brandInput py-2 px-3 rounded-input text-left"
+                  />
+                ) : (
+                  <>
+                    {/* 現在の値（クリックで選択肢展開） */}
+                    <button
+                      onClick={() => setExpandedId(expandedId === key ? null : key)}
+                      className="w-full bg-brandInput py-2 px-3 rounded-input text-left"
+                    >
+                      {answers[key]}
+                    </button>
 
-                {/* 選択肢（展開時） */}
-                {expandedId === key && (
-                  <div className="flex gap-2 flex-wrap mt-2">
-                    {(["強い", "中くらい", "弱い", "無い"] as DailyAnswerValue[]).map((v) => (
-                      <button
-                        key={v}
-                        onClick={() => handleSelect(key, v)}
-                        className="px-3 py-1 bg-white border rounded-full text-xs"
-                      >
-                        {v}
-                      </button>
-                    ))}
-                  </div>
+                    {/* 選択肢（展開時） */}
+                    {expandedId === key && (
+                      <div className="flex gap-2 flex-wrap mt-2">
+                        {(["強い", "中くらい", "弱い", "無い"] as DailyAnswerValue[]).map((v) => (
+                          <button
+                            key={v}
+                            onClick={() => handleSelect(key, v)}
+                            className="px-3 py-1 bg-white border rounded-full text-xs"
+                          >
+                            {v}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             );

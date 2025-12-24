@@ -13,7 +13,8 @@ export type DailyAnswerValue =
   | "少し落ち込んだ"
   | "安定していた"
   | "少量"
-  | "多い";
+  | "多い"
+  | string; // ← 任意の文字列（体温など）を許容するように変更
 
 export type DailyQuestionId =
   | "hotflash"
@@ -29,6 +30,7 @@ export type DailyQuestionId =
   | "bleeding"
   | "headache"
   | "shoulder"
+  | "temperature" // ← 追加
   | string;
 
 export interface DailyQuestion {
@@ -52,7 +54,8 @@ export interface DailyAnswers {
   bleeding?: DailyAnswerValue;
   headache?: DailyAnswerValue;
   shoulder?: DailyAnswerValue;
-  [key: string]: DailyAnswerValue | undefined;
+  temperature?: string; // ← 追加 (数値入力だが文字列として保持)
+  [key: string]: DailyAnswerValue | string | undefined;
 }
 
 export interface DailyRecord {
