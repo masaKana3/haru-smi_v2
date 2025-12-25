@@ -28,10 +28,11 @@ function format(date: Date): string {
 }
 
 export function loadPeriodRecords(): PeriodRecord[] {
-  const raw = localStorage.getItem("haru_periods");
-  if (!raw) return [];
-
   try {
+    if (typeof localStorage === "undefined") return [];
+    const raw = localStorage.getItem("haru_periods");
+    if (!raw) return [];
+
     const list = JSON.parse(raw) as PeriodRecord[];
     return Array.isArray(list) ? list.filter((p) => Boolean(p?.start)) : [];
   } catch {

@@ -22,6 +22,7 @@ import { useNavigation } from "../hooks/useNavigation";
 import { useCommunityNavigation } from "../hooks/useCommunityNavigation";
 
 type Props = {
+  nav: ReturnType<typeof useNavigation>;
   totalScore: number | null;
   todayDaily: DailyRecord | null;
   dailyItems: DailyQuestion[];
@@ -38,6 +39,7 @@ type Props = {
 };
 
 export default function AppNavigator({
+  nav,
   totalScore,
   todayDaily,
   dailyItems,
@@ -52,7 +54,6 @@ export default function AppNavigator({
   onUpdateTodayDaily,
   onLogout,
 }: Props) {
-  const nav = useNavigation();
   const communityNav = useCommunityNavigation(nav);
 
   return (

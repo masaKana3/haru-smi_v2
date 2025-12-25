@@ -50,12 +50,16 @@ export default function App() {
 
   // SMI 完了
   const handleFinishSMI = async (total: number, answers: SMIConvertedAnswer[]) => {
-    setTotalScore(total);
-    setSmiAnswers(answers);
-    await storage.saveSMIResult(total, answers);
-    await storage.saveSMIHistory(total, answers);
-
-    nav.navigate("result");
+    try {
+      setTotalScore(total);
+      setSmiAnswers(answers);
+      await storage.saveSMIResult(total, answers);
+      await storage.saveSMIHistory(total, answers);
+    } catch (error) {
+      console.error("SMI save error:", error);
+    } finally {
+      nav.navigate("result");
+    }
   };
 
   // ★ カレンダーの日付が選択されたら
@@ -127,8 +131,9 @@ export default function App() {
       if (done) {
         if (total !== null) setTotalScore(total);
         if (answers) setSmiAnswers(answers);
-        nav.navigate("dashboard");
       }
+      // 診断済みかどうかにかかわらず、初期表示はDashboardを優先
+      nav.navigate("dashboard");
     };
     load();
   }, [storage]);
@@ -171,6 +176,7 @@ export default function App() {
 
   return (
     <AppNavigator
+      nav={nav}
       totalScore={totalScore}
       todayDaily={todayDaily}
       dailyItems={dailyItems}
