@@ -1,6 +1,7 @@
 export interface UserProfile {
   nickname: string;
   bio: string;
+  avatarUrl?: string;
 }
 
 export interface UserAuth {
