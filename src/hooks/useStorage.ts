@@ -12,6 +12,11 @@ const COMMENTS_KEY = "haru_comments";
 const REPORTS_KEY = "haru_reports";
 const LIKES_KEY = "haru_likes";
 
+// UUID形式（ハイフンを含む）かどうかを判定する補助関数
+const isUUID = (id: string | null | undefined): id is string => {
+  return typeof id === 'string' && id.includes('-');
+};
+
 async function hashPassword(password: string): Promise<string> {
   const msgBuffer = new TextEncoder().encode(password);
   const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
@@ -29,12 +34,10 @@ export function useStorage() {
 
   // SMIデータの読み込み
   const loadSMIResult = useCallback(async () => {
-    // 1. Try Supabase (Latest record)
     const { data: authData } = await supabase.auth.getUser();
     const user = authData.user;
     if (user) {
-      const { data, error } = await supabase
-        .from("smi_results")
+      const { data, error } = await (supabase.from("smi_results") as any)
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
@@ -51,7 +54,6 @@ export function useStorage() {
       }
     }
 
-    // 2. Fallback to LocalStorage
     const done = localStorage.getItem("haru_smi_done") === "true";
     const totalStr = localStorage.getItem("haru_smi_total");
     const answersStr = localStorage.getItem("haru_smi_answers");
@@ -70,7 +72,6 @@ export function useStorage() {
 
   // SMI履歴の保存
   const saveSMIHistory = useCallback(async (total: number, answers: SMIConvertedAnswer[]) => {
-    // LocalStorage
     const raw = localStorage.getItem("haru_smi_history");
     const history: SMIRecord[] = raw ? JSON.parse(raw) : [];
     const newRecord: SMIRecord = {
@@ -80,7 +81,6 @@ export function useStorage() {
     };
     localStorage.setItem("haru_smi_history", JSON.stringify([newRecord, ...history]));
 
-    // Supabase
     const { data: authData } = await supabase.auth.getUser();
     const user = authData.user;
     if (user) {
@@ -95,12 +95,10 @@ export function useStorage() {
 
   // SMI履歴の読み込み
   const loadSMIHistory = useCallback(async (): Promise<SMIRecord[]> => {
-    // 1. Try Supabase
     const { data: authData } = await supabase.auth.getUser();
     const user = authData.user;
     if (user) {
-      const { data } = await supabase
-        .from("smi_results")
+      const { data } = await (supabase.from("smi_results") as any)
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
@@ -114,7 +112,6 @@ export function useStorage() {
       }
     }
 
-    // 2. Fallback to LocalStorage
     const raw = localStorage.getItem("haru_smi_history");
     if (!raw) return [];
     try {
@@ -128,11 +125,9 @@ export function useStorage() {
 
   // 日々の記録の保存
   const saveDailyRecord = useCallback(async (data: DailyRecord) => {
-    // LocalStorage
     const key = `haru_daily_${data.date}`;
     localStorage.setItem(key, JSON.stringify(data));
 
-    // Supabase
     const { data: authData } = await supabase.auth.getUser();
     const user = authData.user;
     if (user) {
@@ -150,12 +145,10 @@ export function useStorage() {
 
   // 日々の記録の読み込み（単日）
   const loadDailyRecord = useCallback(async (date: string): Promise<DailyRecord | null> => {
-    // 1. Try Supabase
     const { data: authData } = await supabase.auth.getUser();
     const user = authData.user;
     if (user) {
-      const { data, error } = await supabase
-        .from("daily_checks")
+      const { data, error } = await (supabase.from("daily_checks") as any)
         .select("*")
         .eq("user_id", user.id)
         .eq("date", date)
@@ -170,7 +163,6 @@ export function useStorage() {
       }
     }
 
-    // 2. Fallback to LocalStorage
     const key = `haru_daily_${date}`;
     const raw = localStorage.getItem(key);
     if (!raw) return null;
@@ -184,12 +176,10 @@ export function useStorage() {
 
   // 日々の記録の読み込み（全履歴）
   const loadAllDailyRecords = useCallback(async (): Promise<DailyRecord[]> => {
-    // 1. Try Supabase
     const { data: authData } = await supabase.auth.getUser();
     const user = authData.user;
     if (user) {
-      const { data } = await supabase
-        .from("daily_checks")
+      const { data } = await (supabase.from("daily_checks") as any)
         .select("*")
         .eq("user_id", user.id)
         .order("date", { ascending: false });
@@ -202,7 +192,6 @@ export function useStorage() {
       }
     }
 
-    // 2. Fallback to LocalStorage
     const records = Object.keys(localStorage)
       .filter((key) => key.startsWith("haru_daily_"))
       .map((key) => {
@@ -289,11 +278,13 @@ export function useStorage() {
     async (
       postData: Omit<Post, "id" | "createdAt" | "likes"> & { id?: string }
     ): Promise<Post> => {
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData.user;
+      
       const raw = localStorage.getItem(POSTS_KEY);
       const posts: Post[] = raw ? JSON.parse(raw) : [];
 
       if (postData.id) {
-        // Update
         const index = posts.findIndex((p) => p.id === postData.id);
         if (index !== -1) {
           const updatedPost = { ...posts[index], ...postData } as Post;
@@ -303,10 +294,10 @@ export function useStorage() {
         }
       }
       
-      // Create or Fallback
       const newPost: Post = {
         likes: 0,
         ...postData,
+        authorId: user?.id || postData.authorId,
         id: postData.id || `p_${Math.random().toString(36).slice(2, 9)}`,
         createdAt: new Date().toISOString(),
       };
@@ -329,7 +320,6 @@ export function useStorage() {
   }, []);
 
   const likePost = useCallback(async (id: string, userId: string): Promise<Post | null> => {
-    // 1. いいね情報の更新 (Toggle)
     const rawLikes = localStorage.getItem(LIKES_KEY);
     const likes: { userId: string; postId: string }[] = rawLikes ? JSON.parse(rawLikes) : [];
     
@@ -337,15 +327,14 @@ export function useStorage() {
     let isAdding = true;
 
     if (existingIndex !== -1) {
-      likes.splice(existingIndex, 1); // 解除
+      likes.splice(existingIndex, 1);
       isAdding = false;
     } else {
-      likes.push({ userId, postId: id }); // 追加
+      likes.push({ userId, postId: id });
       isAdding = true;
     }
     localStorage.setItem(LIKES_KEY, JSON.stringify(likes));
 
-    // 2. 投稿のいいね数を更新
     const raw = localStorage.getItem(POSTS_KEY);
     const posts: Post[] = raw ? JSON.parse(raw) : [];
     const index = posts.findIndex((p) => p.id === id);
@@ -431,11 +420,9 @@ export function useStorage() {
     const targetId = userId || user?.id || localStorage.getItem("haru_current_user_id");
     if (!targetId) return;
 
-    // LocalStorage
     const key = `haru_profile_${targetId}`;
     localStorage.setItem(key, JSON.stringify(profile));
 
-    // Supabase
     if (user && user.id === targetId) {
       const { error } = await (supabase.from("profiles") as any).upsert({
         id: targetId,
@@ -451,11 +438,10 @@ export function useStorage() {
   const loadProfile = useCallback(async (userId?: string): Promise<UserProfile | null> => {
     const { data: authData } = await supabase.auth.getUser();
     const user = authData.user;
-
-    // targetId を確実に string または null に固定します
-    const targetId: string | null = userId || user?.id || localStorage.getItem("haru_current_user_id");
+    let targetId = userId || user?.id || localStorage.getItem("haru_current_user_id");
     
-    if (targetId) {
+    // Supabaseリクエスト前のUUIDチェック
+    if (isUUID(targetId)) {
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData.session) {
         const { data, error } = await supabase
@@ -466,17 +452,16 @@ export function useStorage() {
         
         if (!error && data) {
           const row = data as any;
-          // 戻り値を UserProfile 型として安全にキャストします
-          const profile: UserProfile = {
+          return {
             nickname: row.nickname || "",
             bio: row.bio || "",
             avatarUrl: row.avatar_url || undefined,
-          };
-          return profile;
+          } as UserProfile;
         }
       }
+    }
 
-      // Supabaseにデータがない場合の LocalStorage フォールバック
+    if (targetId) {
       const key = `haru_profile_${targetId}`;
       const raw = localStorage.getItem(key);
       if (raw) {
@@ -487,7 +472,6 @@ export function useStorage() {
         }
       }
     }
-    
     return null;
   }, []);
 
