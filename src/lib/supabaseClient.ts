@@ -14,3 +14,25 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+
+// 1. 接続テスト（Health Check）
+export const testSupabaseConnection = async () => {
+  try {
+    // 存在しないテーブルからデータを1件取得しようと試みる
+    // これが 'relation "public.health_check" does not exist' のようなAPIエラーになれば、Supabaseとの通信は成功している
+    // 型定義がまだ空のため、一時的に any として扱う
+    // supabase クライアント自体を any にキャストして型チェックを回避
+    const { error } = await (supabase as any).from("health_check").select("*").limit(1);
+
+    // エラーがあっても、それが「テーブルが存在しない」という内容であれば、
+    // Supabaseサーバーまでは到達できているため「接続成功」とみなす
+    const isTableMissing = error && (error.code === "42P01" || error.message.includes("Could not find the table"));
+
+    if (error && !isTableMissing) {
+      throw error;
+    }
+    console.log("✅ Supabase connection successful.");
+  } catch (error: any) {
+    console.error("❌ Supabase connection failed:", error.message);
+  }
+};

@@ -8,23 +8,20 @@ import { PeriodRecord } from "./types/period";
 import { SMIConvertedAnswer } from "./types/smi";
 import { useStorage } from "./hooks/useStorage";
 import { useNavigation } from "./hooks/useNavigation";
+import { useSupabaseAuth } from "./hooks/useSupabaseAuth";
 import AuthNavigator from "./navigators/AuthNavigator";
 import AppNavigator from "./navigators/AppNavigator";
 
 export default function App() {
   // 画面遷移フック
   const nav = useNavigation();
+  const { user, loading: authLoading, signOut } = useSupabaseAuth();
 
   const [totalScore, setTotalScore] = useState<number | null>(null);
   const [smiAnswers, setSmiAnswers] = useState<SMIConvertedAnswer[] | null>(null);
   const [dailyItems, setDailyItems] = useState<DailyQuestion[]>([]);
   const [todayDaily, setTodayDaily] = useState<DailyRecord | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
-    if (typeof localStorage !== "undefined") {
-      return localStorage.getItem("haru_current_user_id");
-    }
-    return null;
-  });
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [historyRecords, setHistoryRecords] = useState<DailyRecord[]>([]);
   const [latestPeriod, setLatestPeriod] = useState<PeriodRecord | null>(null);
 
@@ -36,16 +33,20 @@ export default function App() {
     new Date().toISOString().slice(0, 10)
   );
 
+  // ユーザー状態の同期
+  useEffect(() => {
+    if (!authLoading) {
+      setCurrentUserId(user?.id ?? null);
+    }
+  }, [user, authLoading]);
+
   const handleLoginSuccess = (userId: string) => {
-    setCurrentUserId(userId);
-    localStorage.setItem("haru_current_user_id", userId);
+    // Supabase Auth の状態変化で自動的に更新されるため、ここではナビゲーションのみ
     nav.navigate("dashboard");
   };
 
-  const handleLogout = () => {
-    setCurrentUserId(null);
-    localStorage.removeItem("haru_current_user_id");
-    // ログイン画面への遷移は下部の if (!currentUserId) ブロックで自動的に処理されます
+  const handleLogout = async () => {
+    await signOut();
   };
 
   // SMI 完了
@@ -168,6 +169,10 @@ export default function App() {
     };
     load();
   }, [storage, nav.screen]);
+
+  if (authLoading) {
+    return <div className="w-full h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   // 未ログイン時の表示
   if (!currentUserId) {

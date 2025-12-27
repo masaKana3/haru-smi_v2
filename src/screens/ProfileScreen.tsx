@@ -3,6 +3,7 @@ import PostCard from "../components/PostCard";
 import { Post } from "../types/community";
 import { useStorage } from "../hooks/useStorage";
 import { UserProfile } from "../types/user";
+import { useSupabaseAuth } from "../hooks/useSupabaseAuth";
 
 type Props = {
   onBack: () => void;
@@ -20,6 +21,7 @@ export default function ProfileScreen({
   onEditProfile,
 }: Props) {
   const storage = useStorage();
+  const { user } = useSupabaseAuth();
   const [myPosts, setMyPosts] = useState<Post[]>([]);
   const [likedPosts, setLikedPosts] = useState<Post[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -77,7 +79,11 @@ export default function ProfileScreen({
             👤
           </div>
           <div className="font-semibold text-lg">
-            {profile?.nickname || "ユーザー"}
+            {profile?.nickname ||
+              (isMe && user?.user_metadata?.full_name) ||
+              (isMe && user?.email?.split("@")[0]) ||
+              "ユーザー"
+            }
           </div>
           
           {profile?.bio && (

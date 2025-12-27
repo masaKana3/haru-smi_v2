@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useStorage } from "../hooks/useStorage";
+import { supabase } from "../lib/supabaseClient";
 
 type Props = {
   onLoginSuccess: (userId: string) => void;
@@ -8,7 +8,6 @@ type Props = {
 };
 
 export default function LoginScreen({ onLoginSuccess, onGoToSignup, onForgotPassword }: Props) {
-  const storage = useStorage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -23,14 +22,17 @@ export default function LoginScreen({ onLoginSuccess, onGoToSignup, onForgotPass
 
     setLoading(true);
     try {
-      const userId = await storage.loginUser(email, password);
-      if (userId) {
-        onLoginSuccess(userId);
-      } else {
-        setError("メールアドレスまたはパスワードが間違っています。");
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      if (data.user) {
+        onLoginSuccess(data.user.id);
       }
-    } catch (err) {
-      setError("ログイン中にエラーが発生しました。");
+    } catch (err: any) {
+      setError(err.message || "ログイン中にエラーが発生しました。");
     } finally {
       setLoading(false);
     }

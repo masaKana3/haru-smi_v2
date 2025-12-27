@@ -16,8 +16,8 @@ export default function AuthNavigator({ onLoginSuccess }: Props) {
   if (nav.screen === "signup") {
     return (
       <SignupScreen
-        onSignupSuccess={onLoginSuccess}
-        onGoToLogin={() => nav.navigate("login")}
+        onSuccess={() => nav.navigate("login")}
+        onCancel={() => nav.navigate("login")}
       />
     );
   }
