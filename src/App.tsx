@@ -24,6 +24,7 @@ export default function App() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [historyRecords, setHistoryRecords] = useState<DailyRecord[]>([]);
   const [latestPeriod, setLatestPeriod] = useState<PeriodRecord | null>(null);
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
 
   // ストレージ操作フック
   const storage = useStorage();
@@ -124,6 +125,12 @@ export default function App() {
     nav.navigate("dashboard");
   };
 
+  // プロフィール画面への遷移
+  const handleOpenProfile = (userId: string) => {
+    setViewingUserId(userId);
+    nav.navigate("profile");
+  };
+
   // ★★★ Step B：SMIを復元（←ここに追加）
   useEffect(() => {
     const load = async () => {
@@ -195,6 +202,8 @@ export default function App() {
       onSelectDate={handleSelectDate}
       onUpdateTodayDaily={(updated: DailyRecord) => setTodayDaily(updated)}
       onLogout={handleLogout}
+      viewingUserId={viewingUserId}
+      onOpenProfile={handleOpenProfile}
     />
   );
 }

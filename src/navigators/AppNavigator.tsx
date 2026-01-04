@@ -36,6 +36,8 @@ type Props = {
   onSelectDate: (dateStr: string) => void;
   onUpdateTodayDaily: (updated: DailyRecord) => void;
   onLogout: () => void;
+  viewingUserId: string | null;
+  onOpenProfile: (userId: string) => void;
 };
 
 export default function AppNavigator({
@@ -53,6 +55,8 @@ export default function AppNavigator({
   onSelectDate,
   onUpdateTodayDaily,
   onLogout,
+  viewingUserId,
+  onOpenProfile,
 }: Props) {
   const communityNav = useCommunityNavigation(nav);
 
@@ -126,6 +130,7 @@ export default function AppNavigator({
           onOpenDiary={() => nav.navigate("diary")}
           onOpenPostDetail={communityNav.handleOpenPostDetail}
           currentUserId={currentUserId}
+          onOpenProfile={onOpenProfile}
         />
       )}
 
@@ -177,8 +182,9 @@ export default function AppNavigator({
           onBack={() => nav.navigate("settings")}
           onOpenPostDetail={communityNav.handleOpenPostDetail}
           currentUserId={currentUserId}
-          viewingUserId={nav.viewingUserId || currentUserId}
+          viewingUserId={viewingUserId || currentUserId}
           onEditProfile={() => nav.navigate("profileEdit")}
+          onOpenProfile={onOpenProfile}
         />
       )}
 

@@ -3,6 +3,7 @@ import PostCard from "../components/PostCard";
 import { getTopics } from "../logic/communityLogic";
 import { Post, Topic } from "../types/community";
 import { useStorage } from "../hooks/useStorage";
+import { UserProfile } from "../types/user";
 
 type Props = {
   onBack: () => void;
@@ -11,6 +12,7 @@ type Props = {
   onOpenDiary: () => void;
   onOpenPostDetail: (postId: string) => void;
   currentUserId: string;
+  onOpenProfile: (userId: string) => void;
 };
 
 export default function CommunityScreen({
@@ -20,10 +22,12 @@ export default function CommunityScreen({
   onOpenDiary,
   onOpenPostDetail,
   currentUserId,
+  onOpenProfile,
 }: Props) {
   const storage = useStorage();
   const topics = useMemo(() => getTopics(), []);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [authorProfiles, setAuthorProfiles] = useState<{ [key: string]: UserProfile }>({});
 
   const loadPosts = async () => {
     const data = await storage.listPosts({ isPublic: true });
@@ -33,6 +37,33 @@ export default function CommunityScreen({
   useEffect(() => {
     loadPosts();
   }, []);
+
+  // 投稿一覧が更新されたら、未取得のプロフィール情報を取得してキャッシュする
+  useEffect(() => {
+    const loadProfiles = async () => {
+      const uniqueAuthorIds = Array.from(new Set(posts.map((p) => p.authorId)));
+      const newProfiles: { [key: string]: UserProfile } = {};
+      let hasNew = false;
+
+      for (const authorId of uniqueAuthorIds) {
+        if (!authorProfiles[authorId]) {
+          const profile = await storage.getUserProfile(authorId);
+          if (profile) {
+            newProfiles[authorId] = profile;
+            hasNew = true;
+          }
+        }
+      }
+
+      if (hasNew) {
+        setAuthorProfiles((prev) => ({ ...prev, ...newProfiles }));
+      }
+    };
+
+    if (posts.length > 0) {
+      loadProfiles();
+    }
+  }, [posts, storage]); // authorProfilesは依存配列に含めず、posts更新時のみチェック
 
   const handleLike = async (postId: string) => {
     await storage.likePost(postId, currentUserId);
@@ -116,6 +147,8 @@ export default function CommunityScreen({
                 topic={topics.find((t) => t.id === post.topicId)}
                 onOpen={() => onOpenPostDetail(post.id)}
                 onLike={() => handleLike(post.id)}
+                authorProfile={authorProfiles[post.authorId]}
+                onOpenProfile={onOpenProfile}
               />
             ))}
             {posts.length === 0 && (

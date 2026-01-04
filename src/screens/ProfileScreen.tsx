@@ -11,6 +11,7 @@ type Props = {
   currentUserId: string;
   viewingUserId: string;
   onEditProfile: () => void;
+  onOpenProfile?: (userId: string) => void;
 };
 
 export default function ProfileScreen({
@@ -19,6 +20,7 @@ export default function ProfileScreen({
   currentUserId,
   viewingUserId,
   onEditProfile,
+  onOpenProfile,
 }: Props) {
   const storage = useStorage();
   const { user } = useSupabaseAuth();
@@ -75,8 +77,16 @@ export default function ProfileScreen({
         </div>
 
         <div className="bg-white rounded-card p-6 shadow-sm text-center space-y-2">
-          <div className="w-20 h-20 bg-brandAccentAlt/30 rounded-full mx-auto flex items-center justify-center text-2xl">
-            👤
+          <div className="w-20 h-20 bg-brandAccentAlt/30 rounded-full mx-auto flex items-center justify-center text-2xl overflow-hidden">
+            {profile?.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              "👤"
+            )}
           </div>
           <div className="font-semibold text-lg">
             {profile?.nickname ||
@@ -140,6 +150,7 @@ export default function ProfileScreen({
               post={post}
               onOpen={() => onOpenPostDetail(post.id)}
               onLike={() => handleLike(post.id)}
+              onOpenProfile={onOpenProfile}
             />
           ))}
           {displayPosts.length === 0 && (

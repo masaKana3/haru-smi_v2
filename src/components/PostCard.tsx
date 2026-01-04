@@ -1,77 +1,99 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Post, Topic } from "../types/community";
-import { toRelativeTime } from "../utils/dateUtils";
-import { useStorage } from "../hooks/useStorage";
+import { UserProfile } from "../types/user";
 
 type Props = {
   post: Post;
   topic?: Topic;
-  onOpen?: () => void;
+  onOpen: () => void;
+  onLike: () => void;
+  authorProfile?: UserProfile;
   onOpenProfile?: (userId: string) => void;
-  onLike?: () => void;
 };
 
-export default function PostCard({ post, topic, onOpen, onOpenProfile, onLike }: Props) {
-  const storage = useStorage();
-  const [authorName, setAuthorName] = useState("ユーザー");
+export default function PostCard({
+  post,
+  topic,
+  onOpen,
+  onLike,
+  authorProfile,
+  onOpenProfile,
+}: Props) {
+  const dateLabel = new Date(post.createdAt).toLocaleString("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadAuthor = async () => {
-      const profile = await storage.getUserProfile(post.authorId);
-      if (isMounted && profile?.nickname) {
-        setAuthorName(profile.nickname);
-      }
-    };
-    loadAuthor();
-    return () => { isMounted = false; };
-  }, [storage, post.authorId]);
+  // ニックネームのフォールバック: プロフィール名 -> "ユーザー"
+  const displayName = authorProfile?.nickname || "ユーザー";
 
-  const title = post.title || (post.type === "diary" ? "日記" : topic?.title || "スレッド");
-  const visibilityLabel = post.visibility === "public" ? "公開" : "非公開";
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onOpenProfile) {
+      onOpenProfile(post.authorId);
+    }
+  };
 
   return (
-    <div className="w-full bg-white rounded-card p-4 shadow-sm space-y-2">
-      <div className="flex items-center justify-between text-xs text-brandMuted">
+    <div
+      onClick={onOpen}
+      className="bg-white border border-brandAccentAlt/30 rounded-card p-4 shadow-sm space-y-2 cursor-pointer hover:bg-gray-50 transition-colors"
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          {/* アバター表示 */}
+          <div
+            onClick={handleProfileClick}
+            className="w-10 h-10 rounded-full bg-brandAccentAlt/30 flex items-center justify-center overflow-hidden flex-shrink-0 text-lg cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            {authorProfile?.avatarUrl ? (
+              <img
+                src={authorProfile.avatarUrl}
+                alt={displayName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              "👤"
+            )}
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <span
+                onClick={handleProfileClick}
+                className="text-sm font-bold text-brandText cursor-pointer hover:underline"
+              >
+                {displayName}
+              </span>
+              {topic && (
+                <span className="text-[10px] px-2 py-0.5 bg-brandBg border border-brandAccentAlt rounded-full text-brandMuted">
+                  {topic.title}
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-brandMuted">{dateLabel}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-sm text-brandText whitespace-pre-wrap line-clamp-3">
+        {post.content}
+      </div>
+
+      <div className="flex items-center justify-end gap-4 pt-2">
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onOpenProfile?.(post.authorId);
+            onLike();
           }}
-          className="hover:underline"
+          className="flex items-center gap-1 text-xs text-brandAccent hover:opacity-80 transition-opacity"
         >
-          {post.type === "diary" ? "日記" : "テーマ投稿"} • {authorName}
+          <span>❤️</span>
+          <span>{post.likes}</span>
         </button>
-        <span className="px-2 py-[2px] bg-brandAccentAlt/20 rounded-full text-[11px]">
-          {visibilityLabel}
-        </span>
       </div>
-      <div className="text-base font-semibold text-brandText">{title}</div>
-      <div className="text-sm text-brandText leading-relaxed whitespace-pre-line line-clamp-3">
-        {post.content}
-      </div>
-      <div className="flex items-center justify-between text-xs text-brandMuted">
-        <span>{toRelativeTime(post.createdAt)}</span>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onLike}
-            className="text-xs text-brandAccent hover:opacity-80 transition-opacity"
-          >
-            👍 {post.likes}
-          </button>
-          {onOpen && (
-            <button
-              onClick={onOpen}
-              className="text-xs text-brandAccent underline hover:opacity-80 transition-opacity"
-            >
-              開く
-            </button>
-          )}
-        </div>
-      </div>
-      {topic && (
-        <div className="text-[11px] text-brandMuted">テーマ: {topic.title}</div>
-      )}
     </div>
   );
 }

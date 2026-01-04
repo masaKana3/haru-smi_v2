@@ -10,6 +10,7 @@ export default function ProfileEditScreen({ onBack, onSaved }: Props) {
   const storage = useStorage();
   const [nickname, setNickname] = useState("");
   const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,6 +19,7 @@ export default function ProfileEditScreen({ onBack, onSaved }: Props) {
       if (profile) {
         setNickname(profile.nickname);
         setBio(profile.bio);
+        setAvatarUrl(profile.avatarUrl || "");
       }
       setLoading(false);
     };
@@ -32,6 +34,7 @@ export default function ProfileEditScreen({ onBack, onSaved }: Props) {
     await storage.saveProfile({
       nickname: nickname.trim(),
       bio: bio.trim(),
+      avatarUrl: avatarUrl.trim(),
     });
     onSaved();
   };
@@ -66,6 +69,16 @@ export default function ProfileEditScreen({ onBack, onSaved }: Props) {
               onChange={(e) => setNickname(e.target.value)}
               className="w-full border border-brandAccentAlt rounded-card px-3 py-2 text-sm"
               placeholder="表示名を入力"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-semibold">アバター画像URL</label>
+            <input
+              value={avatarUrl}
+              onChange={(e) => setAvatarUrl(e.target.value)}
+              className="w-full border border-brandAccentAlt rounded-card px-3 py-2 text-sm"
+              placeholder="画像のURL（https://...）をここに貼り付けてください"
             />
           </div>
 
