@@ -3,7 +3,6 @@ import { DailyRecord } from "../types/daily";
 import { PeriodRecord } from "../types/period";
 import { generateAdvice } from "../logic/adviceLogic";
 import Card from "../components/layout/Card";
-import SectionTitle from "../components/layout/SectionTitle";
 import CalendarGrid from "../components/calendar/CalendarGrid";
 import { buildCalendarEntries } from "../utils/calendarEntries";
 import WeatherCard from "../components/weather/WeatherCard";
@@ -12,7 +11,31 @@ import { fetchWeather, WeatherData, WeatherError } from "../api/weather";
 import { loadMenstrualMarkers } from "../logic/calendar/menstrualMarkers";
 import { generateNurseAdvice } from "../logic/advice/nurseAdvice";
 import { useStorage } from "../hooks/useStorage";
-import { predictNextPeriod, PredictionResult } from "../logic/core/periodPrediction";
+import { predictNextPeriod, PredictionResult, getCyclePhase, PhaseInfo } from "../logic/core/periodPrediction";
+
+// ▼ フェーズごとのスタイルとアドバイス定義
+const PHASE_STYLES: Record<string, { label: string; color: string; advice: string }> = {
+  menstrual: {
+    label: "月経期",
+    color: "bg-rose-100 text-rose-700 border-rose-200",
+    advice: "無理せず体を温めてリラックス。",
+  },
+  follicular: {
+    label: "卵胞期",
+    color: "bg-sky-100 text-sky-700 border-sky-200",
+    advice: "心身ともに好調！新しい挑戦を。",
+  },
+  ovulation: {
+    label: "排卵期",
+    color: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    advice: "前向きな気持ちで過ごせそう。",
+  },
+  luteal: {
+    label: "黄体期",
+    color: "bg-amber-100 text-amber-700 border-amber-200",
+    advice: "むくみやイライラに注意して。",
+  },
+};
 
 type Props = {
   total: number | null;
@@ -95,6 +118,8 @@ export default function DashboardScreen({
   const storage = useStorage();
   const [username, setUsername] = useState("ユーザー");
   const [periodPrediction, setPeriodPrediction] = useState<PredictionResult | null>(null);
+  const [currentPhase, setCurrentPhase] = useState<PhaseInfo | null>(null);
+
   const todayStr = new Date().toISOString().slice(0, 10);
   const hasTodayRecord = Boolean(
     todayDaily && todayDaily.date === todayStr && todayDaily.answers
@@ -113,6 +138,17 @@ export default function DashboardScreen({
     () => loadMenstrualMarkers(),
     [selectedDate, latestPeriod]
   );
+
+  // ▼ カレンダー連携用データの準備
+  // 将来的に CalendarGrid に排卵日予測などを渡すためにデータを整形
+  const predictionForCalendar = useMemo(() => {
+    if (!periodPrediction) return null;
+    return {
+      nextPeriodDate: periodPrediction.nextPeriodDate,
+      // PredictionResult に nextOvulationDate が含まれていると仮定、または計算ロジックを追加
+      // nextOvulationDate: periodPrediction.nextOvulationDate, 
+    };
+  }, [periodPrediction]);
 
   const initialMonth = selectedDate ? new Date(selectedDate) : new Date();
 
@@ -187,6 +223,16 @@ export default function DashboardScreen({
     loadPrediction();
   }, [storage, latestPeriod]); // latestPeriodが変わったら再計算
 
+  // ▼ 最新の生理記録から現在のフェーズを計算
+  useEffect(() => {
+    if (latestPeriod) {
+      const info = getCyclePhase(latestPeriod.start);
+      setCurrentPhase(info);
+    } else {
+      setCurrentPhase(null);
+    }
+  }, [latestPeriod]);
+
   // スコア表示用の安全な値（NaN対策）
   const safeTotal =
     typeof total === "number" && !Number.isNaN(total)
@@ -228,34 +274,13 @@ export default function DashboardScreen({
         <CalendarGrid
           entries={calendarEntries}
           menstrualMarkers={menstrualMarkers}
-          onOpenPeriodInput={onStartPeriodInput}
           selectedDate={selectedDate}
           onSelectDate={handleSelectDate}
           initialMonth={initialMonth}
+          // prediction={predictionForCalendar} // 将来的にカレンダー側が対応したら有効化
         />
 
-        {/* 生理予測カード */}
-        {periodPrediction && periodPrediction.nextPeriodDate && (
-          <Card className="p-4 flex items-center justify-between shadow-sm border border-brandAccentAlt/20">
-            <div>
-              <div className="text-xs text-brandMuted mb-1">次の生理予定日</div>
-              <div className="text-lg font-bold text-brandText">
-                {formatJPDate(periodPrediction.nextPeriodDate)}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xs text-brandMuted mb-1">あと</div>
-              <div className="text-xl font-bold text-brandAccent">
-                {periodPrediction.daysUntilNext !== null && periodPrediction.daysUntilNext < 0
-                  ? "予定日超過"
-                  : periodPrediction.daysUntilNext}
-                <span className="text-sm text-brandText font-normal ml-1">日</span>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* 現在の更年期指数カード（円グラフ） */}
+        {/* 現在の更年期指数カード（円グラフ） ※カレンダー直下に移動 */}
         <Card
           as="button"
           onClick={onStartSMI}
@@ -293,43 +318,68 @@ export default function DashboardScreen({
           </div>
         </Card>
 
-        {/* 今日の総合アドバイスカード */}
-        <Card className="py-7 px-6 shadow-md">
-          <div className="mb-2">
-            <SectionTitle className="mb-1">🔮 今日の総合アドバイス</SectionTitle>
-
-            <div className="text-[11px] text-brandMuted mb-1">
-              Summary for Today
-            </div>
-
-            <div className="text-xs text-brandMuted">
-              📅 {formatJPDate(selectedDate)} のアドバイス
-            </div>
-          </div>
-
-          {hasTodayRecord && summaryAdvice ? (
-            <div className="my-2">
-              <div className="bg-brandAccentAlt/20 rounded-lg px-3 py-2 text-sm leading-relaxed text-brandText">
-                {summaryAdvice}
+        {/* 今日のサマリーカード（生理予測とアドバイスを統合） */}
+        <Card
+          as="button"
+          onClick={onOpenInsight}
+          className="w-full text-left p-4 shadow-sm border border-brandAccentAlt/20 flex flex-col gap-4 hover:bg-gray-50 transition-colors"
+        >
+          {/* 上段：生理予測情報（データがある場合のみ） */}
+          {periodPrediction && periodPrediction.nextPeriodDate && (
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-brandMuted mb-1">次の生理予定日</div>
+                  <div className="text-lg font-bold text-brandText">
+                    {formatJPDate(periodPrediction.nextPeriodDate)}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-brandMuted mb-1">あと</div>
+                  <div className="text-xl font-bold text-brandAccent">
+                    {periodPrediction.daysUntilNext !== null && periodPrediction.daysUntilNext < 0
+                      ? "予定日超過"
+                      : periodPrediction.daysUntilNext}
+                    <span className="text-sm text-brandText font-normal ml-1">日</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="text-sm text-brandMuted my-2 leading-relaxed">
-              今日の体調はいかがですか？<br />
-              今日も無理せず過ごしてくださいね。
-            </div>
+
+              {/* 中段：フェーズ情報 */}
+              {currentPhase && PHASE_STYLES[currentPhase.phase] && (
+                <div className="flex items-center gap-3">
+                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold border ${PHASE_STYLES[currentPhase.phase].color}`}>
+                    {PHASE_STYLES[currentPhase.phase].label}
+                  </span>
+                  <span className="text-xs text-brandText">
+                    {PHASE_STYLES[currentPhase.phase].advice}
+                  </span>
+                </div>
+              )}
+
+              <div className="border-t border-dashed border-brandAccentAlt/30" />
+            </>
           )}
 
-          <div className="border-t border-brandAccentAlt pt-3 flex justify-end">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenInsight();
-              }}
-              className="text-xs text-brandAccent underline hover:opacity-80 transition-opacity"
-            >
-              → 詳しく見る
-            </button>
+          {/* 下段：今日の総合アドバイス */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-semibold text-brandMuted">今日の総合アドバイス</div>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-brandMuted">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </div>
+
+            {hasTodayRecord && summaryAdvice ? (
+              <div className="text-sm leading-relaxed text-brandText">
+                {summaryAdvice}
+              </div>
+            ) : (
+              <div className="text-sm text-brandMuted leading-relaxed">
+                今日の体調はいかがですか？<br />
+                今日も無理せず過ごしてくださいね。
+              </div>
+            )}
           </div>
         </Card>
 

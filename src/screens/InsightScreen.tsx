@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { DailyRecord } from "../types/daily";
+import { PeriodRecord } from "../types/period";
 import { generateNurseAdvice } from "../logic/advice/nurseAdvice";
 import { getOrGenerateRecipe } from "../logic/advice/recipeSuggestion";
 import { fetchWeather, WeatherData, WeatherError } from "../api/weather";
@@ -13,9 +14,11 @@ import CyclePhaseAnalysis from "../components/insight/CyclePhaseAnalysis";
 type Props = {
   todayDaily: DailyRecord | null;
   onBack: () => void;
+  latestPeriod?: PeriodRecord | null;
+  allDailyRecords?: DailyRecord[];
 };
 
-export default function InsightScreen({ todayDaily, onBack }: Props) {
+export default function InsightScreen({ todayDaily, onBack, latestPeriod, allDailyRecords }: Props) {
   const storage = useStorage();
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [weatherError, setWeatherError] = useState<WeatherError | null>(null);
@@ -123,23 +126,32 @@ export default function InsightScreen({ todayDaily, onBack }: Props) {
   // -------------------------
   useEffect(() => {
     const load = async () => {
+      if (allDailyRecords) {
+        setDailyHistory(allDailyRecords);
+        return;
+      }
       const records = await storage.loadAllDailyRecords();
       setDailyHistory(records);
     };
     load();
-  }, [storage]);
+  }, [storage, allDailyRecords]);
 
   // -------------------------
   // 生理周期フェーズ取得
   // -------------------------
   useEffect(() => {
     const load = async () => {
-      const latestPeriod = await storage.getLatestPeriod();
-      const info = getCyclePhase(latestPeriod?.start || null);
+      if (latestPeriod !== undefined) {
+        const info = getCyclePhase(latestPeriod?.start || null);
+        setPhaseInfo(info);
+        return;
+      }
+      const fetchedPeriod = await storage.getLatestPeriod();
+      const info = getCyclePhase(fetchedPeriod?.start || null);
       setPhaseInfo(info);
     };
     load();
-  }, [storage]);
+  }, [storage, latestPeriod]);
 
   // -------------------------
   // ★ RECIPE 状態ログ（追加）

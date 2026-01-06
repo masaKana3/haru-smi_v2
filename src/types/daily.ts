@@ -62,4 +62,6 @@ export interface DailyRecord {
   date: string;
   answers: DailyAnswers;
   items?: DailyQuestion[];
+  isPeriod?: boolean;
+  memo?: string;
 }

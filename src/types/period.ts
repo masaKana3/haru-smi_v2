@@ -15,4 +15,5 @@ export interface PeriodRecord {
   start: string;
   bleeding: PeriodBleedingLevel;
   symptoms: PeriodSymptoms;
+  memo?: string;
 }

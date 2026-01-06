@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useStorage } from "../hooks/useStorage";
 
+const PRESET_AVATARS = [
+  { label: "アザラシ", url: "http://flat-icon-design.com/f/f_object_174/s256_f_object_174_0bg.png" },
+  { label: "パンダ", url: "http://flat-icon-design.com/f/f_object_100/s256_f_object_100_0bg.png" },
+  { label: "ペンギン", url: "http://flat-icon-design.com/f/f_object_108/s256_f_object_108_0bg.png" },
+  { label: "たぬき", url: "http://flat-icon-design.com/f/f_object_149/s256_f_object_149_0bg.png" },
+  { label: "ねこ", url: "http://flat-icon-design.com/f/f_object_111/s256_f_object_111_0bg.png" },
+  { label: "いぬ", url: "http://flat-icon-design.com/f/f_object_112/s256_f_object_112_0bg.png" },
+];
+
 type Props = {
   onBack: () => void;
   onSaved: () => void;
@@ -61,7 +70,7 @@ export default function ProfileEditScreen({ onBack, onSaved }: Props) {
           <div className="w-14" />
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="space-y-1">
             <label className="text-sm font-semibold">ニックネーム</label>
             <input
@@ -70,6 +79,31 @@ export default function ProfileEditScreen({ onBack, onSaved }: Props) {
               className="w-full border border-brandAccentAlt rounded-card px-3 py-2 text-sm"
               placeholder="表示名を入力"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-semibold">おすすめアイコン</label>
+            <div className="flex items-center gap-3 pt-1">
+              {PRESET_AVATARS.map((avatar) => (
+                <button
+                  key={avatar.label}
+                  type="button"
+                  onClick={() => setAvatarUrl(avatar.url)}
+                  className={`w-12 h-12 rounded-full overflow-hidden focus:outline-none transition-all duration-200 ease-in-out ${
+                    avatarUrl === avatar.url
+                      ? "ring-2 ring-brandAccent ring-offset-2 ring-offset-white"
+                      : "hover:opacity-80"
+                  }`}
+                  aria-label={`アバターを${avatar.label}に設定`}
+                >
+                  <img
+                    src={avatar.url}
+                    alt={avatar.label}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-1">
