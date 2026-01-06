@@ -7,9 +7,18 @@ import { fetchWeather, WeatherData, WeatherError } from "../api/weather";
 import { useStorage } from "../hooks/useStorage";
 import { SMIRecord } from "../types/smi";
 import SMIScoreChart from "../components/smi/SMIScoreChart";
-import TemperatureChart from "../components/daily/TemperatureChart";
 import { getCyclePhase, PhaseInfo } from "../logic/core/periodPrediction";
 import CyclePhaseAnalysis from "../components/insight/CyclePhaseAnalysis";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceArea,
+} from "recharts";
 
 type Props = {
   todayDaily: DailyRecord | null;
@@ -108,7 +117,7 @@ export default function InsightScreen({ todayDaily, onBack, latestPeriod, allDai
     return () => {
       cancelled = true;
     };
-  }, [todayDaily?.answers, weatherData]);   // ← JSON.stringify は絶対に不要！！
+  }, [todayDaily?.answers, weatherData]);
 
   // -------------------------
   // SMI履歴読み込み
@@ -152,6 +161,71 @@ export default function InsightScreen({ todayDaily, onBack, latestPeriod, allDai
     };
     load();
   }, [storage, latestPeriod]);
+
+  // -------------------------
+  // グラフ用データの準備
+  // -------------------------
+  const sortedHistory = useMemo(() => {
+    // 日付昇順にソート
+    return [...dailyHistory].sort((a, b) => (a.date > b.date ? 1 : -1));
+  }, [dailyHistory]);
+
+  const chartData = useMemo(() => {
+    return sortedHistory.map((r) => ({
+      date: r.date.slice(5).replace("-", "/"), // MM/DD
+      fullDate: r.date,
+      temp: r.answers.temperature ? parseFloat(r.answers.temperature) : null,
+      memo: r.memo,
+      isPeriod: r.isPeriod,
+    }));
+  }, [sortedHistory]);
+
+  // 生理期間の範囲を計算（ReferenceArea用）
+  const periodRanges = useMemo(() => {
+    const ranges: { start: string; end: string }[] = [];
+    let currentStart: string | null = null;
+    let lastDate: string | null = null;
+
+    chartData.forEach((d) => {
+      if (d.isPeriod) {
+        if (!currentStart) currentStart = d.date;
+        lastDate = d.date;
+      } else {
+        if (currentStart && lastDate) {
+          ranges.push({ start: currentStart, end: lastDate });
+          currentStart = null;
+          lastDate = null;
+        }
+      }
+    });
+    // 最後の期間を閉じる
+    if (currentStart && lastDate) {
+      ranges.push({ start: currentStart, end: lastDate });
+    }
+    return ranges;
+  }, [chartData]);
+
+  // カスタムツールチップ
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white p-3 border border-brandAccentAlt rounded shadow-lg text-xs z-50">
+          <p className="font-bold mb-1">{data.fullDate}</p>
+          <p className="text-brandAccent font-semibold text-sm">
+            {data.temp ? `${data.temp}℃` : "記録なし"}
+          </p>
+          {data.isPeriod && <p className="text-rose-500 mt-1">🩸 生理中</p>}
+          {data.memo && (
+            <div className="mt-2 pt-2 border-t border-gray-100">
+              <p className="text-gray-500 whitespace-pre-wrap">📝 {data.memo}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
 
   // -------------------------
   // ★ RECIPE 状態ログ（追加）
@@ -206,10 +280,44 @@ export default function InsightScreen({ todayDaily, onBack, latestPeriod, allDai
 
         <div className="space-y-2">
           <div className="text-sm font-semibold text-brandText">🌡️ 基礎体温の推移</div>
-          <TemperatureChart records={dailyHistory} />
+          <div className="w-full h-64 bg-white rounded-card p-2 border border-brandAccentAlt/20">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 10, fill: "#888" }} 
+                  interval="preserveStartEnd"
+                  minTickGap={30}
+                />
+                <YAxis 
+                  domain={[35.5, 37.5]} 
+                  tick={{ fontSize: 10, fill: "#888" }} 
+                  tickCount={5}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                {periodRanges.map((range, i) => (
+                  <ReferenceArea 
+                    key={i} 
+                    x1={range.start} 
+                    x2={range.end} 
+                    fill="#ffe4e6" 
+                    fillOpacity={0.5} 
+                  />
+                ))}
+                <Line
+                  type="monotone"
+                  dataKey="temp"
+                  stroke="#F472B6"
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: "#F472B6", strokeWidth: 0 }}
+                  activeDot={{ r: 5, fill: "#EC4899" }}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-
-        {/* ★removed: condition advice UI */}
 
         {nurseAdvice && (
           <div className="space-y-2">

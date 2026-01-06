@@ -5,7 +5,6 @@ import DailyCheckScreen from "../screens/DailyCheckScreen";
 import ResultScreen from "../screens/ResultScreen";
 import DailyCheckDetail from "../screens/DailyCheckDetail";
 import HistoryScreen from "../screens/HistoryScreen";
-import PeriodInputScreen from "../screens/PeriodInputScreen";
 import InsightScreen from "../screens/InsightScreen";
 import CommunityScreen from "../screens/CommunityScreen";
 import PostCreateScreen from "../screens/PostCreateScreen";
@@ -77,7 +76,6 @@ export default function AppNavigator({
           selectedDate={selectedDate}
           onShowHistory={() => nav.navigate("history")}
           onStartSMI={() => nav.navigate("smi")}
-          onStartPeriodInput={() => nav.navigate("periodInput")}
           onOpenInsight={() => nav.navigate("insight")}
           onOpenCommunity={() => nav.navigate("community")}
           onOpenSettings={() => nav.navigate("settings")}
@@ -112,13 +110,6 @@ export default function AppNavigator({
             nav.setPrevScreen("history");
             onSelectDate(date);
           }}
-        />
-      )}
-
-      {nav.screen === "periodInput" && (
-        <PeriodInputScreen
-          onBack={() => nav.navigate("dashboard")}
-          onSaved={() => nav.navigate("dashboard")}
         />
       )}
 

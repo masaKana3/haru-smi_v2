@@ -45,7 +45,6 @@ type Props = {
   selectedDate: string;
   onShowHistory: () => void;
   onStartSMI: () => void;
-  onStartPeriodInput: () => void;
   onOpenInsight: () => void;
   onOpenCommunity: () => void;
   onOpenSettings: () => void;
@@ -109,7 +108,6 @@ export default function DashboardScreen({
   selectedDate,   // ← 追加②
   onShowHistory,   // ← 追加③
   onStartSMI,      // ★追加する！
-  onStartPeriodInput, // ← 追加
   onOpenInsight,     // ← ★ これを追加！
   onOpenCommunity,
   onOpenSettings,
