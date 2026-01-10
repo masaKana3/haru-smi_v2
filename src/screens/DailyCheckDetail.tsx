@@ -40,6 +40,7 @@ type Props = {
   readOnly?: boolean;
   onBack: () => void;
   onUpdate: (updated: DailyRecord) => void;
+  onSaved?: () => void;
 };
 
 export default function DailyCheckDetail({
@@ -48,6 +49,7 @@ export default function DailyCheckDetail({
   isToday,
   onBack,
   onUpdate,
+  onSaved,
 }: Props) {
   const storage = useStorage();
 
@@ -399,6 +401,7 @@ export default function DailyCheckDetail({
             onUpdate(recordToSave);
 
             alert("記録を保存しました！");
+            onSaved?.();
           }}
           className="mt-6 w-full py-3 bg-brandAccent text-white rounded-button"
         >

@@ -86,7 +86,10 @@ export default function AppNavigator({
       {nav.screen === "daily" && (
         <DailyCheckScreen
           dailyItems={dailyItems}
-          onSave={onSaveDaily}
+          onSave={(data) => {
+            onSaveDaily(data);
+            nav.navigate("detail");
+          }}
           onCancel={() => nav.navigate("dashboard")}
         />
       )}
@@ -96,9 +99,10 @@ export default function AppNavigator({
           data={todayDaily}
           selectedDate={selectedDate}
           isToday={selectedDate === new Date().toISOString().slice(0, 10)}
-          readOnly={selectedDate !== new Date().toISOString().slice(0, 10)}
+          readOnly={selectedDate > new Date().toISOString().slice(0, 10)}
           onBack={() => nav.goBack("dashboard")}
           onUpdate={onUpdateTodayDaily}
+          onSaved={() => nav.navigate("dashboard")}
         />
       )}
 
