@@ -134,7 +134,15 @@ export default function DailyCheckDetail({
   });
   const [temperature, setTemperature] = useState<string>("");
   const [memo, setMemo] = useState<string>("");
+  const [hospitalVisit, setHospitalVisit] = useState(false);
+  const [medicationChange, setMedicationChange] = useState(false);
+  const [bloodTestNote, setBloodTestNote] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null); // デイリー項目の開閉用
+
+  // アコーディオン開閉状態
+  const [isPeriodOpen, setIsPeriodOpen] = useState(true);
+  const [isDailyOpen, setIsDailyOpen] = useState(true);
+  const [isOtherOpen, setIsOtherOpen] = useState(false);
 
   // 初期データロード（haru_periods と DailyRecord の同期）
   useEffect(() => {
@@ -162,12 +170,13 @@ export default function DailyCheckDetail({
 
     // 2. 体温の確認
     setTemperature(effectiveData.answers.temperature || "");
+
+    // 3. その他項目の確認
+    setHospitalVisit(effectiveData.answers.hospital_visit === "true");
+    setMedicationChange(effectiveData.answers.medication_change === "true");
+    setBloodTestNote((effectiveData.answers.blood_test_note as string) || "");
   }, [effectiveData]);
 
-  // デイリー項目の変更ハンドラ（ローカルstateではなく、親のonUpdateを呼ぶ形だが、ここでは保存時にまとめて処理するため、一時的にanswersを更新する関数が必要かも。
-  // ただし既存実装は onUpdate を呼んでいる。ここではUIの整合性を保つため、DailyItems部分は既存の仕組み（onUpdate）を利用しつつ、
-  // 生理・体温・メモはローカルStateで管理し、保存時にマージする戦略をとる。
-  
   const handleSelect = (key: string, value: DailyAnswerValue | string) => {
     // answersを更新して親に通知（UI上の表示更新のため）
     const updated: DailyRecord = {
@@ -181,56 +190,72 @@ export default function DailyCheckDetail({
     setSymptoms((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // セクションヘッダーコンポーネント
+  const SectionHeader = ({ title, isOpen, toggle }: { title: string; isOpen: boolean; toggle: () => void }) => (
+    <button
+      onClick={toggle}
+      className="w-full flex items-center justify-between py-3 border-b border-brandAccentAlt/30 mb-4 hover:bg-gray-50 transition-colors"
+    >
+      <span className="font-semibold text-sm text-brandTextStrong border-l-4 border-brandAccent pl-2">{title}</span>
+      <span className="text-xs text-brandMuted">{isOpen ? "▲" : "▼"}</span>
+    </button>
+  );
+
   return (
     <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 pb-24 text-brandText">
       <div className="w-full max-w-sm bg-white rounded-card p-6 shadow-sm">
 
         {/* 上部タイトルと戻る */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-6">
           <h2 className="text-md font-semibold">{selectedDate} の記録</h2>
           <button onClick={onBack} className="text-sm text-brandMutedAlt">
             戻る
           </button>
         </div>
 
-        {/* 生理中トグル */}
-        <div className="mb-6 flex items-center justify-between bg-brandInput p-3 rounded-card">
-          <span className="text-sm font-semibold text-brandText">今日は生理中ですか？</span>
-          <button
-            onClick={() => {
-              const next = !isPeriodLocal;
-              setIsPeriodLocal(next);
-              if (next && bleeding === "無い") {
-                setBleeding("普通");
-              }
-            }}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              isPeriodLocal ? "bg-brandAccent" : "bg-gray-300"
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                isPeriodLocal ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
-          </button>
-        </div>
+        {/* --- 1. 生理の記録 --- */}
+        <SectionHeader title="生理の記録" isOpen={isPeriodOpen} toggle={() => setIsPeriodOpen(!isPeriodOpen)} />
+        
+        {isPeriodOpen && (
+          <div className="mb-6">
+            {/* 生理中トグル */}
+            <div className="mb-6 flex items-center justify-between bg-brandInput p-3 rounded-card">
+              <span className="text-sm font-semibold text-brandText">今日は生理中ですか？</span>
+              <button
+                onClick={() => {
+                  const next = !isPeriodLocal;
+                  setIsPeriodLocal(next);
+                  if (next && bleeding === "無い") {
+                    setBleeding("普通");
+                  }
+                }}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  isPeriodLocal ? "bg-brandAccent" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isPeriodLocal ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
 
-        {/* 出血量（常時表示） */}
-        <div className="mb-6">
-          <label className="block text-sm text-brandMutedAlt mb-2">出血量</label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setBleeding("無い")}
-              className={`flex-1 py-3 rounded-button border flex flex-col items-center justify-center gap-1 transition-colors ${
-                bleeding === "無い"
-                  ? "bg-brandAccent text-white border-brandAccent"
-                  : "bg-white text-brandText border-brandAccentAlt/50 hover:bg-brandBg"
-              }`}
-            >
-              <span className="text-lg leading-none">🚫</span>
-              <span className="text-xs font-medium">無い</span>
-            </button>
+            {/* 出血量（常時表示） */}
+            <div className="mb-6">
+              <label className="block text-sm text-brandMutedAlt mb-2">出血量</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setBleeding("無い")}
+                  className={`flex-1 py-3 rounded-button border flex flex-col items-center justify-center gap-1 transition-colors ${
+                    bleeding === "無い"
+                      ? "bg-brandAccent text-white border-brandAccent"
+                      : "bg-white text-brandText border-brandAccentAlt/50 hover:bg-brandBg"
+                  }`}
+                >
+                  <span className="text-lg leading-none">🚫</span>
+                  <span className="text-xs font-medium">無い</span>
+                </button>
 
                 {(["少ない", "普通", "多い"] as PeriodBleedingLevel[]).map((level) => {
                   let icon = "💧";
@@ -258,96 +283,141 @@ export default function DailyCheckDetail({
                   ※生理外の出血（不正出血）として記録されます
                 </p>
               )}
-        </div>
+            </div>
 
-        {/* ▼ 生理詳細（トグルON時のみ表示） */}
-        {isPeriodLocal && (
-          <div className="mb-6 space-y-6 border-b border-dashed border-brandAccentAlt/30 pb-6">
-            {/* 症状 */}
-            <div>
-              <label className="block text-sm text-brandMutedAlt mb-3">症状（複数選択可）</label>
-              <div className="grid grid-cols-2 gap-2">
-                {PERIOD_SYMPTOMS.map((sym) => (
-                  <SymptomToggle
-                    key={sym.key}
-                    label={sym.label}
-                    active={symptoms[sym.key]}
-                    onToggle={() => toggleSymptom(sym.key)}
-                  />
-                ))}
+            {/* ▼ 生理詳細（トグルON時のみ表示） */}
+            {isPeriodLocal && (
+              <div className="mb-2 space-y-6">
+                {/* 症状 */}
+                <div>
+                  <label className="block text-sm text-brandMutedAlt mb-3">症状（複数選択可）</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PERIOD_SYMPTOMS.map((sym) => (
+                      <SymptomToggle
+                        key={sym.key}
+                        label={sym.label}
+                        active={symptoms[sym.key]}
+                        onToggle={() => toggleSymptom(sym.key)}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* --- 2. 体調の記録 --- */}
+        <SectionHeader title="体調の記録" isOpen={isDailyOpen} toggle={() => setIsDailyOpen(!isDailyOpen)} />
+
+        {isDailyOpen && (
+          <div className="mb-6 space-y-4">
+            {/* ▼ デイリー項目一覧（体温・出血以外） */}
+            {Object.keys(answers).map((key) => {
+              // 体温と出血は別途UIがあるのでここではスキップ
+              if (key === "temperature" || key === "bleeding") return null;
+
+              const label = LABELS[key] ?? key;
+              return (
+                <div key={key}>
+                  <div className="text-sm text-brandMutedAlt mb-1">
+                    {label}
+                  </div>
+                  <>
+                      {/* 現在の値 */}
+                      <button
+                        onClick={() => setExpandedId(expandedId === key ? null : key)}
+                        className="w-full bg-brandInput py-2 px-3 rounded-input text-left"
+                      >
+                        {answers[key]}
+                      </button>
+
+                      {/* 選択肢（展開時） */}
+                      {expandedId === key && (
+                        <div className="flex gap-2 flex-wrap mt-2">
+                          {(["強い", "中くらい", "弱い", "無い"] as DailyAnswerValue[]).map((v) => (
+                            <button
+                              key={v}
+                              onClick={() => handleSelect(key, v)}
+                              className="px-3 py-1 bg-white border rounded-full text-xs"
+                            >
+                              {v}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                  </>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* --- 3. その他 --- */}
+        <SectionHeader title="その他（診察・検査など）" isOpen={isOtherOpen} toggle={() => setIsOtherOpen(!isOtherOpen)} />
+
+        {isOtherOpen && (
+          <div className="mb-2">
+            {/* ▼ 基礎体温 */}
+            <div className="mb-6">
+              <label className="block text-sm text-brandMutedAlt mb-2">
+                基礎体温 (℃)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="36.50"
+                value={temperature}
+                onChange={(e) => setTemperature(e.target.value)}
+                className="w-full py-2 px-3 border rounded-button bg-brandInput"
+              />
+            </div>
+
+            {/* ▼ 診察・検査 */}
+            <div className="mb-6 space-y-3">
+              <div className="flex items-center justify-between py-2 border-b border-brandAccentAlt/30">
+                <span className="text-sm text-brandText">🏥 病院に行きましたか？</span>
+                <input
+                  type="checkbox"
+                  checked={hospitalVisit}
+                  onChange={(e) => setHospitalVisit(e.target.checked)}
+                  className="accent-brandAccent w-5 h-5"
+                />
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-brandAccentAlt/30">
+                <span className="text-sm text-brandText">💊 処方薬の変更はありましたか？</span>
+                <input
+                  type="checkbox"
+                  checked={medicationChange}
+                  onChange={(e) => setMedicationChange(e.target.checked)}
+                  className="accent-brandAccent w-5 h-5"
+                />
+              </div>
+              <div className="mt-3">
+                <label className="block text-sm text-brandMutedAlt mb-2">血液検査結果など（メモ）</label>
+                <textarea
+                  value={bloodTestNote}
+                  onChange={(e) => setBloodTestNote(e.target.value)}
+                  className="w-full py-2 px-3 border rounded-button bg-brandInput min-h-[60px] text-sm"
+                  placeholder="数値や医師のコメントなど"
+                />
+              </div>
+            </div>
+
+            {/* ▼ メモ */}
+            <div className="mb-2">
+              <label className="block text-sm text-brandMutedAlt mb-2">メモ</label>
+              <textarea
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                className="w-full py-2 px-3 border rounded-button bg-brandInput min-h-[80px] text-sm"
+                placeholder="気になったことなど"
+              />
             </div>
           </div>
         )}
 
-        {/* ▼ デイリー項目一覧（体温・出血以外） */}
-        <div className="space-y-4">
-          {Object.keys(answers).map((key) => {
-            // 体温と出血は別途UIがあるのでここではスキップ
-            if (key === "temperature" || key === "bleeding") return null;
-
-            const label = LABELS[key] ?? key;
-            return (
-              <div key={key}>
-                <div className="text-sm text-brandMutedAlt mb-1">
-                  {label}
-                </div>
-                <>
-                    {/* 現在の値 */}
-                    <button
-                      onClick={() => setExpandedId(expandedId === key ? null : key)}
-                      className="w-full bg-brandInput py-2 px-3 rounded-input text-left"
-                    >
-                      {answers[key]}
-                    </button>
-
-                    {/* 選択肢（展開時） */}
-                    {expandedId === key && (
-                      <div className="flex gap-2 flex-wrap mt-2">
-                        {(["強い", "中くらい", "弱い", "無い"] as DailyAnswerValue[]).map((v) => (
-                          <button
-                            key={v}
-                            onClick={() => handleSelect(key, v)}
-                            className="px-3 py-1 bg-white border rounded-full text-xs"
-                          >
-                            {v}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                </>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ▼ 基礎体温 */}
-        <div className="mt-6">
-          <label className="block text-sm text-brandMutedAlt mb-2">
-            基礎体温 (℃)
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            placeholder="36.50"
-            value={temperature}
-            onChange={(e) => setTemperature(e.target.value)}
-            className="w-full py-2 px-3 border rounded-button bg-brandInput"
-          />
-        </div>
-
-        {/* ▼ メモ */}
-        <div className="mt-6">
-          <label className="block text-sm text-brandMutedAlt mb-2">メモ</label>
-          <textarea
-            value={memo}
-            onChange={(e) => setMemo(e.target.value)}
-            className="w-full py-2 px-3 border rounded-button bg-brandInput min-h-[80px] text-sm"
-            placeholder="気になったことなど"
-          />
-        </div>
-
-        {/* ▼ 追加：保存ボタン */}
+        {/* ▼ 保存ボタン */}
         <button
           onClick={async () => {
             // 1. haru_periods の更新（同期）
@@ -384,6 +454,17 @@ export default function DailyCheckDetail({
             const finalAnswers = { ...effectiveData.answers };
             if (temperature) finalAnswers.temperature = temperature;
             finalAnswers.bleeding = bleeding;
+
+            // その他の項目を保存（文字列として保存）
+            if (hospitalVisit) finalAnswers.hospital_visit = "true";
+            else delete finalAnswers.hospital_visit;
+
+            if (medicationChange) finalAnswers.medication_change = "true";
+            else delete finalAnswers.medication_change;
+
+            if (bloodTestNote) finalAnswers.blood_test_note = bloodTestNote;
+            else delete finalAnswers.blood_test_note;
+
             // OFFの場合は出血情報を削除するか、そのままにするか。
             // ここでは整合性のため、OFFなら出血情報はanswersから消す（または更新しない）のが安全だが、
             // 既存の回答を消してしまうリスクもあるため、上書きのみ行う。
@@ -397,10 +478,11 @@ export default function DailyCheckDetail({
 
             await storage.saveDailyRecord(recordToSave);
             
+            alert("記録を保存しました！");
+
             // 親コンポーネントの状態も更新
             onUpdate(recordToSave);
 
-            alert("記録を保存しました！");
             onSaved?.();
           }}
           className="mt-6 w-full py-3 bg-brandAccent text-white rounded-button"

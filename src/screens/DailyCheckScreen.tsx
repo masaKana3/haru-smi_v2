@@ -17,11 +17,11 @@ type ChatMessage = {
 
 type Props = {
   dailyItems: DailyQuestion[];
-  onSave?: (data: DailyRecord) => void;
+  onComplete?: (data: DailyRecord) => void;
   onCancel?: () => void;
 };
 
-export default function DailyCheckScreen({ dailyItems, onSave, onCancel }: Props) {
+export default function DailyCheckScreen({ dailyItems, onComplete, onCancel }: Props) {
   const [index, setIndex] = useState<number>(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [answers, setAnswers] = useState<DailyAnswers>({});
@@ -121,12 +121,12 @@ export default function DailyCheckScreen({ dailyItems, onSave, onCancel }: Props
       {
         id: prev.length + 1,
         from: "bot",
-        text: "教えてくれてありがとうございます。今日の記録を保存しますね。",
+        text: "教えてくれてありがとうございます。内容を確認してください。",
       },
     ]);
 
-    if (onSave) {
-      onSave(dataToSave);
+    if (onComplete) {
+      onComplete(dataToSave);
     }
   };
 
@@ -164,10 +164,10 @@ export default function DailyCheckScreen({ dailyItems, onSave, onCancel }: Props
       const dataToSave: DailyRecord = { date: dateStr, answers: newAnswers, items: dailyItems };
       setMessages((prev) => [
         ...prev,
-        { id: prev.length + 1, from: "bot", text: "教えてくれてありがとうございます。今日の記録を保存しますね。" },
+        { id: prev.length + 1, from: "bot", text: "教えてくれてありがとうございます。内容を確認してください。" },
       ]);
-      if (onSave) {
-        onSave(dataToSave);
+      if (onComplete) {
+        onComplete(dataToSave);
       }
     }
   };
@@ -207,10 +207,10 @@ export default function DailyCheckScreen({ dailyItems, onSave, onCancel }: Props
     const dataToSave: DailyRecord = { date: dateStr, answers: finalAnswers, items: dailyItems };
     setMessages((prev) => [
       ...prev,
-      { id: prev.length + 1, from: "bot", text: "教えてくれてありがとうございます。今日の記録を保存しますね。" },
+      { id: prev.length + 1, from: "bot", text: "教えてくれてありがとうございます。内容を確認してください。" },
     ]);
-    if (onSave) {
-      onSave(dataToSave);
+    if (onComplete) {
+      onComplete(dataToSave);
     }
   };
 

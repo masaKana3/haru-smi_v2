@@ -86,8 +86,8 @@ export default function AppNavigator({
       {nav.screen === "daily" && (
         <DailyCheckScreen
           dailyItems={dailyItems}
-          onSave={(data) => {
-            onSaveDaily(data);
+          onComplete={(data) => {
+            onUpdateTodayDaily(data);
             nav.navigate("detail");
           }}
           onCancel={() => nav.navigate("dashboard")}
