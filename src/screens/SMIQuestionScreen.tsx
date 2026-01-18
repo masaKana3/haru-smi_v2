@@ -1,156 +1,164 @@
 import React, { useState } from "react";
-import { calculateTotalSMIScore } from "../logic/smiLogic";
-import {
-  SMIAnswers,
-  SMIAnswerLabel,
-  SMIAnswerValue,
-  SMIConvertedAnswer,
-  SMIQuestionId,
-} from "../types/smi";
-import SMIQuestion from "../components/smi/SMIQuestion";
+import { SMIConvertedAnswer, SMIQuestionId, SMIAnswerLabel } from "../types/smi";
 
-// 質問文
-const questions: string[] = [
-  "最近、顔がほてることがありますか？",
-  "最近、汗をかきやすいと感じますか？",
-  "手足が冷えやすいと感じますか？",
-  "息切れや動悸を感じることがありますか？",
-  "寝つきが悪い、または眠りが浅いと感じますか？",
-  "怒りやすい、イライラしやすいと感じますか？",
-  "くよくよしたり、憂うつになることがありますか？",
-  "頭痛・めまい・吐き気を感じることがありますか？",
-  "最近、疲れやすいと感じますか？",
-  "肩こり・腰痛・手足の痛みを感じることがありますか？",
+// SMI質問定義（小山嵩夫先生の簡略更年期指数）
+const SMI_ITEMS = [
+  { id: 1, text: "顔がほてる", weights: { strong: 10, medium: 6, weak: 3, none: 0 } },
+  { id: 2, text: "汗をかきやすい", weights: { strong: 10, medium: 6, weak: 3, none: 0 } },
+  { id: 3, text: "腰や手足が冷えやすい", weights: { strong: 14, medium: 9, weak: 5, none: 0 } },
+  { id: 4, text: "息切れ、動悸がする", weights: { strong: 12, medium: 8, weak: 4, none: 0 } },
+  { id: 5, text: "寝つきが悪い、または眠りが浅い", weights: { strong: 14, medium: 9, weak: 5, none: 0 } },
+  { id: 6, text: "怒りやすく、イライラする", weights: { strong: 12, medium: 8, weak: 4, none: 0 } },
+  { id: 7, text: "くよくよしたり、憂鬱になる", weights: { strong: 7, medium: 5, weak: 3, none: 0 } },
+  { id: 8, text: "頭痛、めまい、吐き気がよくある", weights: { strong: 7, medium: 5, weak: 3, none: 0 } },
+  { id: 9, text: "疲れやすい", weights: { strong: 7, medium: 5, weak: 3, none: 0 } },
+  { id: 10, text: "肩こり、腰痛、手足の痛みがある", weights: { strong: 7, medium: 5, weak: 3, none: 0 } },
 ];
 
-// 回答ID（DailyCheck や Dashboard で使う）
-const questionIds: SMIQuestionId[] = [
-  "hotflash",
-  "sweat",
-  "cold",
-  "palpitation",
-  "sleep",
-  "irritability",
-  "mood",
-  "condition",
-  "fatigue",
-  "pain",
-];
-
-// 数値 → ラベル変換
-const toLabel = (v: SMIAnswerValue | null): SMIAnswerLabel =>
-  v === 0 ? "強い" : v === 1 ? "中くらい" : v === 2 ? "弱い" : "無い";
-
-
-// ---------------------------------------------------------
-// レビュー画面
-// ---------------------------------------------------------
-type ReviewScreenProps = {
-  answers: SMIAnswers;
-  onConfirm: () => void;
-  onEdit: (index: number) => void;
+type Props = {
+  onFinish: (total: number, answers: SMIConvertedAnswer[]) => void;
+  onCancel: () => void;
 };
 
-function ReviewScreen({ answers, onConfirm, onEdit }: ReviewScreenProps) {
+export default function SMIQuestionScreen({ onFinish, onCancel }: Props) {
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, { score: number; label: string }>>({});
+
+  const currentItem = SMI_ITEMS[step];
+  const totalSteps = SMI_ITEMS.length;
+  const progress = ((step + 1) / totalSteps) * 100;
+
+  const handleSelect = (score: number, label: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [currentItem.id]: { score, label },
+    }));
+  };
+
+  const handleNext = () => {
+    if (step < totalSteps - 1) {
+      setStep(step + 1);
+    } else {
+      // 計算して終了
+      let total = 0;
+      const converted: SMIConvertedAnswer[] = [];
+      
+      SMI_ITEMS.forEach((item) => {
+        const ans = answers[item.id];
+        if (ans) {
+          total += ans.score;
+          converted.push({
+            id: item.id as any as SMIQuestionId,
+            value: ans.label as SMIAnswerLabel,
+          });
+        }
+      });
+      onFinish(total, converted);
+    }
+  };
+
+  const handleBack = () => {
+    if (step > 0) {
+      setStep(step - 1);
+    }
+  };
+
+  const currentAnswer = answers[currentItem.id];
+
   return (
-    <div className="w-full h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
-      <div className="max-w-sm w-full bg-white rounded-card p-6 shadow-sm">
-        <h2 className="text-center text-lg font-semibold mb-4">
-          回答内容の確認
-        </h2>
+    <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
+      <div className="w-full max-w-sm">
+        {/* 戻るボタン */}
+        <div className="mb-4">
+          <button onClick={onCancel} className="text-sm text-brandMuted hover:text-brandText">
+            ← 戻る
+          </button>
+        </div>
 
-        <ul className="text-sm leading-relaxed">
-          {answers.map((ans, i) => (
-            <li
-              key={i}
-              className="mb-3 cursor-pointer"
-              onClick={() => onEdit(i)}
-            >
-              <div className="font-medium mb-1">Q{i + 1}：{questions[i]}</div>
-              <div className="ml-2 underline text-brandText">
-                {toLabel(ans)}
-              </div>
-            </li>
-          ))}
-        </ul>
+        {/* プログレスバー */}
+        <div className="mb-6">
+          <div className="flex justify-between text-xs text-brandMuted mb-1">
+            <span>Question {step + 1}</span>
+            <span>{totalSteps}</span>
+          </div>
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-brandAccent transition-all duration-300 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
 
-        <button
-          onClick={onConfirm}
-          className="mt-6 w-full py-3 bg-brandAccent text-white rounded-button"
-        >
-          診断する
-        </button>
+        {/* 質問カード */}
+        <div className="bg-white rounded-card p-6 shadow-sm mb-6 min-h-[300px] flex flex-col justify-center items-center text-center">
+          <h2 className="text-lg font-semibold mb-8">{currentItem.text}</h2>
+          
+          <div className="w-full space-y-3">
+            <OptionButton 
+              label="強" 
+              selected={currentAnswer?.label === "強"} 
+              onClick={() => handleSelect(currentItem.weights.strong, "強")} 
+            />
+            <OptionButton 
+              label="中" 
+              selected={currentAnswer?.label === "中"} 
+              onClick={() => handleSelect(currentItem.weights.medium, "中")} 
+            />
+            <OptionButton 
+              label="弱" 
+              selected={currentAnswer?.label === "弱"} 
+              onClick={() => handleSelect(currentItem.weights.weak, "弱")} 
+            />
+            <OptionButton 
+              label="無" 
+              selected={currentAnswer?.label === "無"} 
+              onClick={() => handleSelect(currentItem.weights.none, "無")} 
+            />
+          </div>
+        </div>
+
+        {/* ナビゲーション */}
+        <div className="flex justify-between gap-4">
+          <button
+            onClick={handleBack}
+            disabled={step === 0}
+            className={`flex-1 py-3 rounded-button font-semibold transition-colors ${
+              step === 0 
+                ? "bg-transparent text-transparent cursor-default" 
+                : "bg-white text-brandMuted border border-brandAccentAlt/50 hover:bg-gray-50"
+            }`}
+          >
+            戻る
+          </button>
+          
+          <button
+            onClick={handleNext}
+            disabled={!currentAnswer}
+            className={`flex-1 py-3 rounded-button font-semibold text-white transition-colors ${
+              !currentAnswer
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-brandAccent hover:opacity-90"
+            }`}
+          >
+            {step === totalSteps - 1 ? "結果を計算する" : "次へ"}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-
-// ---------------------------------------------------------
-// メイン（質問進行画面）
-// ---------------------------------------------------------
-export default function SMIQuestionScreen({
-  onFinish,
-}: {
-  onFinish: (total: number, answers: SMIConvertedAnswer[]) => void;
-}) {
-  const [index, setIndex] = useState<number>(0);
-  const [answers, setAnswers] = useState<SMIAnswers>(Array(10).fill(null));
-  const [showReview, setShowReview] = useState<boolean>(false);
-
-  const handleAnswer = (value: SMIAnswerValue) => {
-    const updated = [...answers];
-    updated[index] = value;
-    setAnswers(updated);
-
-    if (index < 9) {
-      setIndex(index + 1);
-    } else {
-      setShowReview(true);
-    }
-  };
-
-  const handleEdit = (qIndex: number) => {
-    setIndex(qIndex);
-    setShowReview(false);
-  };
-
-  // スコア確定
-  const confirmScore = () => {
-    const total = calculateTotalSMIScore(answers);
-
-    // {id, value} 形式に変換
-    const converted: SMIConvertedAnswer[] = answers.map((v, i) => ({
-      id: questionIds[i],
-      value: toLabel(v),
-    }));
-
-    // App.tsx へ返す
-    onFinish(total, converted);
-  };
-
-
-  // ---------------------------------------------------------
-  // 画面表示（質問 or レビュー）
-  // ---------------------------------------------------------
-  if (showReview) {
-    return (
-      <ReviewScreen
-        answers={answers}
-        onConfirm={confirmScore}
-        onEdit={handleEdit}
-      />
-    );
-  }
-
+function OptionButton({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
   return (
-    <div className="w-full h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
-
-      <div className="w-full max-w-sm text-center text-xs mb-6 tracking-wide text-brandMuted">
-        {index + 1} / 10
-      </div>
-
-      <SMIQuestion question={questions[index]} onAnswer={handleAnswer} />
-    </div>
+    <button
+      onClick={onClick}
+      className={`w-full py-3 rounded-button border transition-all ${
+        selected
+          ? "bg-brandAccent text-white border-brandAccent shadow-md scale-[1.02]"
+          : "bg-white text-brandText border-brandAccentAlt/30 hover:bg-brandBg"
+      }`}
+    >
+      {label}
+    </button>
   );
 }

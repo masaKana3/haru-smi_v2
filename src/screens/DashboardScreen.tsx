@@ -44,7 +44,7 @@ type Props = {
   onSelectDate: (date: string) => void;
   selectedDate: string;
   onShowHistory: () => void;
-  onStartSMI: () => void;
+  onOpenSMIHistory: () => void;
   onOpenInsight: () => void;
   onOpenCommunity: () => void;
   onOpenSettings: () => void;
@@ -107,7 +107,7 @@ export default function DashboardScreen({
   onSelectDate,   // ← 追加①
   selectedDate,   // ← 追加②
   onShowHistory,   // ← 追加③
-  onStartSMI,      // ★追加する！
+  onOpenSMIHistory,      // ★追加する！
   onOpenInsight,     // ← ★ これを追加！
   onOpenCommunity,
   onOpenSettings,
@@ -117,7 +117,6 @@ export default function DashboardScreen({
   const [username, setUsername] = useState("ユーザー");
   const [periodPrediction, setPeriodPrediction] = useState<PredictionResult | null>(null);
   const [currentPhase, setCurrentPhase] = useState<PhaseInfo | null>(null);
-  const [lastSMIDate, setLastSMIDate] = useState<string | null>(null);
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const hasTodayRecord = Boolean(
@@ -232,26 +231,6 @@ export default function DashboardScreen({
     }
   }, [latestPeriod]);
 
-  // ▼ SMI履歴の読み込みと経過日数の計算
-  useEffect(() => {
-    const loadSMI = async () => {
-      const history = await storage.loadSMIHistory();
-      if (history.length > 0) {
-        // 日付でソートして最新を取得
-        const sorted = [...history].sort((a, b) => (a.date > b.date ? -1 : 1));
-        setLastSMIDate(sorted[0].date);
-      }
-    };
-    loadSMI();
-  }, [storage, total]); // totalが更新されたら再読み込み
-
-  const daysSinceSMI = useMemo(() => {
-    if (!lastSMIDate) return null;
-    const d1 = new Date(lastSMIDate).setHours(0, 0, 0, 0);
-    const d2 = new Date().setHours(0, 0, 0, 0);
-    return Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
-  }, [lastSMIDate]);
-
   // スコア表示用の安全な値（NaN対策）
   const safeTotal =
     typeof total === "number" && !Number.isNaN(total)
@@ -302,7 +281,7 @@ export default function DashboardScreen({
         {/* 現在の更年期指数カード（円グラフ） ※カレンダー直下に移動 */}
         <Card
           as="button"
-          onClick={onStartSMI}
+          onClick={onOpenSMIHistory}
           className="text-center w-full p-3 space-y-1"
         >
           <div className="text-sm mt-1">現在の更年期指数</div>
@@ -333,14 +312,7 @@ export default function DashboardScreen({
           </div>
 
           <div className="text-xs text-brandMuted">
-            {daysSinceSMI !== null ? (
-              <>
-                前回計測から {daysSinceSMI} 日経過
-                {daysSinceSMI > 90 && <span className="block text-brandAccent font-bold mt-1">推奨計測時期（3ヶ月）を過ぎています</span>}
-              </>
-            ) : (
-              "まだ記録がありません"
-            )}
+            <span className="text-brandAccent font-semibold">詳しくはこちら ＞</span>
           </div>
         </Card>
 
