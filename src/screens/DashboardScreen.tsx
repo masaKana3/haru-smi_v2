@@ -8,7 +8,6 @@ import { buildCalendarEntries } from "../utils/calendarEntries";
 import WeatherCard from "../components/weather/WeatherCard";
 import CommunityPreviewCard from "../components/community/CommunityPreviewCard";
 import { fetchWeather, WeatherData, WeatherError } from "../api/weather";
-import { loadMenstrualMarkers } from "../logic/calendar/menstrualMarkers";
 import { generateNurseAdvice } from "../logic/advice/nurseAdvice";
 import { useStorage } from "../hooks/useStorage";
 import { predictNextPeriod, PredictionResult, getCyclePhase, PhaseInfo } from "../logic/core/periodPrediction";
@@ -130,11 +129,6 @@ export default function DashboardScreen({
   const calendarEntries = useMemo(
     () => buildCalendarEntries(loadDailyRecords()),
     [todayDaily, selectedDate]
-  );
-
-  const menstrualMarkers = useMemo(
-    () => loadMenstrualMarkers(),
-    [selectedDate, latestPeriod]
   );
 
   // ▼ カレンダー連携用データの準備
@@ -271,7 +265,6 @@ export default function DashboardScreen({
 
         <CalendarGrid
           entries={calendarEntries}
-          menstrualMarkers={menstrualMarkers}
           selectedDate={selectedDate}
           onSelectDate={handleSelectDate}
           initialMonth={initialMonth}

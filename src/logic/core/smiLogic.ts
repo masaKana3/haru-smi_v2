@@ -163,9 +163,6 @@ export function generateDailyQuestions(cluster: SMIClusterResult): DailyQuestion
   // ① ★ 毎日必ず聞く：出血
   push(QUESTION_DEFS.bleeding);
 
-  // ② ★ 毎日必ず聞く：基礎体温
-  push(QUESTION_DEFS.temperature);
-
   // ② VMS（ほてり・汗・睡眠）
   if (vmsStrong) {
     push(QUESTION_DEFS.hotflash);
@@ -190,12 +187,15 @@ export function generateDailyQuestions(cluster: SMIClusterResult): DailyQuestion
     push(QUESTION_DEFS.sleep);
   }
 
-  // ⑤ どのクラスタも弱い場合のフォールバック
+  // ⑤ どのクラスタも弱い場合のフォールバック（出血のみの状態）
   if (result.length === 1) {
     push(QUESTION_DEFS.fatigue);
     push(QUESTION_DEFS.sleep);
     push(QUESTION_DEFS.mood);
   }
+
+  // ⑥ ★ 最後に必ず聞く：基礎体温
+  push(QUESTION_DEFS.temperature);
 
   // 出血と体温以外は通常の4択を設定
   return result.map<DailyQuestion>((q) => ({

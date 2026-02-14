@@ -8,6 +8,8 @@ import {
 } from "../types/daily";
 import ChatBubble from "../components/daily/ChatBubble";
 import ChoiceButtons from "../components/daily/ChoiceButtons";
+import { useStorage } from "../hooks/useStorage";
+import { Profile } from "../types/user";
 
 type ChatMessage = {
   id: number;
@@ -25,7 +27,20 @@ export default function DailyCheckScreen({ dailyItems, onComplete, onCancel }: P
   const [index, setIndex] = useState<number>(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [answers, setAnswers] = useState<DailyAnswers>({});
+  const [userAvatar, setUserAvatar] = useState<string | undefined>();
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const storage = useStorage();
+
+  // ユーザーアバターの読み込み
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const profile = await storage.loadProfile();
+      if (profile?.avatar_url) {
+        setUserAvatar(profile.avatar_url);
+      }
+    };
+    fetchProfile();
+  }, [storage]);
 
   // 初期メッセージ
   useEffect(() => {
@@ -233,7 +248,12 @@ export default function DailyCheckScreen({ dailyItems, onComplete, onCancel }: P
         {/* チャットエリア */}
         <div className="flex-1 overflow-y-auto pr-1">
           {messages.map((m) => (
-            <ChatBubble key={m.id} from={m.from} text={m.text} />
+            <ChatBubble
+              key={m.id}
+              from={m.from}
+              text={m.text}
+              avatarUrl={userAvatar}
+            />
           ))}
 
           {/* 選択肢 or 数値入力 */}

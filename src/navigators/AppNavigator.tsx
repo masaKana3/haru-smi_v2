@@ -14,6 +14,7 @@ import PostDetailScreen from "../screens/PostDetailScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import ProfileEditScreen from "../screens/ProfileEditScreen";
+import SMIHistoryScreen from "../screens/SMIHistoryScreen";
 import { DailyQuestion, DailyRecord } from "../types/daily";
 import { PeriodRecord } from "../types/period";
 import { SMIConvertedAnswer } from "../types/smi";
@@ -76,6 +77,7 @@ export default function AppNavigator({
           selectedDate={selectedDate}
           onShowHistory={() => nav.navigate("history")}
           onStartSMI={() => nav.navigate("smi")}
+          onOpenSMIHistory={() => nav.navigate("smi_history")}
           onOpenInsight={() => nav.navigate("insight")}
           onOpenCommunity={() => nav.navigate("community")}
           onOpenSettings={() => nav.navigate("settings")}
@@ -115,6 +117,10 @@ export default function AppNavigator({
             onSelectDate(date);
           }}
         />
+      )}
+
+      {nav.screen === "smi_history" && (
+        <SMIHistoryScreen onBack={() => nav.navigate("dashboard")} />
       )}
 
       {nav.screen === "community" && (

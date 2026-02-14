@@ -102,11 +102,10 @@ export default function CommunityScreen({
           <div className="text-sm font-semibold">運営テーマ</div>
           <div className="space-y-2">
             {topics.map((topic: Topic) => (
-              <div
-                key={topic.id}
-                className="border border-brandAccentAlt rounded-card p-3 space-y-1 bg-brandBg"
-              >
-                <div className="text-sm font-semibold">{topic.title}</div>
+                          <div
+                            key={topic.id}
+                            className="border border-brandAccentAlt rounded-card p-3 space-y-1 bg-gray-50"
+                          >                <div className="text-sm font-semibold">{topic.title}</div>
                 <div className="text-xs text-brandMuted leading-relaxed">
                   {topic.description}
                 </div>
