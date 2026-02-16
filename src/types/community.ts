@@ -1,38 +1,19 @@
-export type Visibility = "public" | "private";
+import { UserProfile } from "./user";
 
-export type Topic = {
+// community_topics テーブルの型
+export type CommunityTopic = {
   id: string;
+  created_at: string;
   title: string;
-  description: string;
 };
 
-export type Post = {
+// community_posts テーブルの型
+export type CommunityPost = {
   id: string;
-  type: "thread" | "diary";
-  title?: string;
+  created_at: string;
+  topic_id: string;
+  user_id: string;
   content: string;
-  authorId: string;
-  createdAt: string | number;
-  visibility: Visibility;
-  topicId?: string;
-  likes: number;
-  comments?: Comment[];
-};
-
-export type Comment = {
-  id: string;
-  postId: string;
-  authorId: string;
-  text: string;
-  createdAt: string;
-  likes: number;
-};
-
-export type Report = {
-  id: string;
-  targetId: string; // postId or commentId
-  targetType: "post" | "comment";
-  reason: string;
-  createdAt: string;
-  reporterId: string;
+  // `profiles`テーブルからJOINで取得するユーザー情報
+  profiles?: Pick<UserProfile, 'nickname' | 'avatarUrl'>;
 };

@@ -55,6 +55,13 @@ export default function App() {
   useEffect(() => {
     if (!currentUserId) return;
 
+    // ユーザーが切り替わった際に古いデータをクリア
+    setHistoryRecords([]);
+    setLatestPeriod(null);
+    setTodayDaily(null);
+    setTotalScore(null);
+    setSmiAnswers(null);
+
     const loadAllPersonalData = async () => {
       // 並列でデータを取得
       const [smiResult, dailyRecords, latestPeriodResult] = await Promise.all([

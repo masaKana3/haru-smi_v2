@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { DailyRecord } from "../types/daily";
 import { PeriodRecord } from "../types/period";
 import { SMIConvertedAnswer, SMIRecord } from "../types/smi";
-import { Post, Comment, Visibility, Report } from "../types/community";
+import { CommunityPost, CommunityTopic } from "../types/community";
 import { UserProfile, UserAuth } from "../types/user";
 import { supabase } from "../lib/supabaseClient";
 import { Json } from "../types/supabase";
@@ -231,183 +231,91 @@ export function useStorage() {
     return data as PeriodRecord | null;
   }, []);
 
-  // === Community Posts ===
+  // === Community Board (Supabase) ===
 
-  const listPosts = useCallback(
-    async (query?: {
-      authorId?: string;
-      topicId?: string;
-      visibility?: Visibility;
-      isPublic?: boolean;
-      type?: "thread" | "diary" | "official";
-    }): Promise<Post[]> => {
-      const raw = localStorage.getItem(POSTS_KEY);
-      let posts: Post[] = raw ? JSON.parse(raw) : [];
-
-      if (query?.authorId) {
-        posts = posts.filter((p) => p.authorId === query.authorId);
-      }
-      if (query?.topicId) {
-        posts = posts.filter((p) => p.topicId === query.topicId);
-      }
-      if (query?.visibility) {
-        posts = posts.filter((p) => p.visibility === query.visibility);
-      }
-      if (query?.isPublic) {
-        posts = posts.filter((p) => p.visibility === "public");
-      }
-      if (query?.type) {
-        posts = posts.filter((p) => p.type === query.type);
-      }
-
-      return posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    },
-    []
-  );
-
-  const getPostById = useCallback(async (id: string): Promise<Post | null> => {
-    const raw = localStorage.getItem(POSTS_KEY);
-    const posts: Post[] = raw ? JSON.parse(raw) : [];
-    const post = posts.find((p) => p.id === id);
-    return post || null;
+  // トピック（お題）の一覧を取得
+  const listCommunityTopics = useCallback(async (): Promise<CommunityTopic[]> => {
+    const { data, error } = await supabase
+      .from("community_topics")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Error fetching community topics:", error);
+      return [];
+    }
+    return data || [];
   }, []);
 
-  const savePost = useCallback(
-    async (
-      postData: Omit<Post, "id" | "createdAt" | "likes"> & { id?: string }
-    ): Promise<Post> => {
-      const { data: authData } = await supabase.auth.getUser();
-      const user = authData.user;
-      
-      const raw = localStorage.getItem(POSTS_KEY);
-      const posts: Post[] = raw ? JSON.parse(raw) : [];
-
-      if (postData.id) {
-        const index = posts.findIndex((p) => p.id === postData.id);
-        if (index !== -1) {
-          const updatedPost = { ...posts[index], ...postData } as Post;
-          posts[index] = updatedPost;
-          localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
-          return updatedPost;
-        }
+  // 管理者がトピック（お題）を作成
+  const createCommunityTopic = useCallback(async (title: string): Promise<CommunityTopic | null> => {
+    const { data, error } = await supabase
+      .from("community_topics")
+      .insert({ title })
+      .select()
+      .single();
+    if (error) {
+      console.error("Error creating community topic:", error);
+      if (error.code === '42501') {
+        alert('トピック作成の権限がありません。');
       }
-      
-      const newPost: Post = {
-        likes: 0,
-        ...postData,
-        authorId: user?.id || postData.authorId,
-        id: postData.id || `p_${Math.random().toString(36).slice(2, 9)}`,
-        createdAt: new Date().toISOString(),
+      return null;
+    }
+    return data;
+  }, []);
+
+  // 特定のトピックに紐づく投稿の一覧を取得
+  const listCommunityPosts = useCallback(async (topicId: string): Promise<CommunityPost[]> => {
+    const { data, error } = await supabase
+      .from("community_posts")
+      .select(`
+        *,
+        profiles (
+          nickname,
+          avatar_url
+        )
+      `)
+      .eq("topic_id", topicId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching community posts:", error);
+      return [];
+    }
+    
+    // 取得したデータをCommunityPost型に整形
+    return (data || []).map(post => {
+      const profileData = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+      return {
+        ...post,
+        // rename avatar_url to avatarUrl to match UserProfile type
+        profiles: profileData ? {
+          nickname: profileData.nickname,
+          avatarUrl: profileData.avatar_url,
+        } : undefined,
       };
-      localStorage.setItem(POSTS_KEY, JSON.stringify([newPost, ...posts]));
-      return newPost;
-    },
-    []
-  );
-
-  const deletePost = useCallback(async (id: string): Promise<void> => {
-    const rawPosts = localStorage.getItem(POSTS_KEY);
-    let posts: Post[] = rawPosts ? JSON.parse(rawPosts) : [];
-    posts = posts.filter((p) => p.id !== id);
-    localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
-
-    const rawComments = localStorage.getItem(COMMENTS_KEY);
-    let comments: Comment[] = rawComments ? JSON.parse(rawComments) : [];
-    comments = comments.filter((c) => c.postId !== id);
-    localStorage.setItem(COMMENTS_KEY, JSON.stringify(comments));
+    });
   }, []);
 
-  const likePost = useCallback(async (id: string, userId: string): Promise<Post | null> => {
-    const rawLikes = localStorage.getItem(LIKES_KEY);
-    const likes: { userId: string; postId: string }[] = rawLikes ? JSON.parse(rawLikes) : [];
-    
-    const existingIndex = likes.findIndex((l) => l.userId === userId && l.postId === id);
-    let isAdding = true;
-
-    if (existingIndex !== -1) {
-      likes.splice(existingIndex, 1);
-      isAdding = false;
-    } else {
-      likes.push({ userId, postId: id });
-      isAdding = true;
+  // ユーザーが投稿を作成
+  const createCommunityPost = useCallback(async (topicId: string, content: string): Promise<CommunityPost | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not logged in");
+      alert("ログインが必要です。");
+      return null;
     }
-    localStorage.setItem(LIKES_KEY, JSON.stringify(likes));
 
-    const raw = localStorage.getItem(POSTS_KEY);
-    const posts: Post[] = raw ? JSON.parse(raw) : [];
-    const index = posts.findIndex((p) => p.id === id);
-    if (index !== -1) {
-      posts[index].likes = isAdding ? posts[index].likes + 1 : Math.max(0, posts[index].likes - 1);
-      localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
-      return posts[index];
+    const { data, error } = await supabase
+      .from("community_posts")
+      .insert({ topic_id: topicId, user_id: user.id, content })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating community post:", error);
+      return null;
     }
-    return null;
-  }, []);
-
-  const listLikedPosts = useCallback(async (userId: string): Promise<Post[]> => {
-    const rawLikes = localStorage.getItem(LIKES_KEY);
-    const likes: { userId: string; postId: string }[] = rawLikes ? JSON.parse(rawLikes) : [];
-    const myLikedPostIds = likes.filter((l) => l.userId === userId).map((l) => l.postId);
-
-    const rawPosts = localStorage.getItem(POSTS_KEY);
-    const posts: Post[] = rawPosts ? JSON.parse(rawPosts) : [];
-    
-    const result = posts.filter((p) => myLikedPostIds.includes(p.id));
-    return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, []);
-
-  // === Community Comments ===
-
-  const loadCommentsByPostId = useCallback(async (postId: string): Promise<Comment[]> => {
-    const raw = localStorage.getItem(COMMENTS_KEY);
-    const allComments: Comment[] = raw ? JSON.parse(raw) : [];
-    const postComments = allComments.filter((c) => c.postId === postId);
-    return postComments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, []);
-
-  const saveComment = useCallback(async (commentData: Omit<Comment, "id" | "createdAt" | "likes">): Promise<Comment> => {
-    const raw = localStorage.getItem(COMMENTS_KEY);
-    const allComments: Comment[] = raw ? JSON.parse(raw) : [];
-    const newComment: Comment = {
-      ...commentData,
-      id: `c_${Math.random().toString(36).slice(2, 9)}`,
-      createdAt: new Date().toISOString(),
-      likes: 0,
-    };
-    localStorage.setItem(COMMENTS_KEY, JSON.stringify([newComment, ...allComments]));
-    return newComment;
-  }, []);
-
-  const likeComment = useCallback(async (id: string): Promise<Comment | null> => {
-    const raw = localStorage.getItem(COMMENTS_KEY);
-    const comments: Comment[] = raw ? JSON.parse(raw) : [];
-    const index = comments.findIndex((c) => c.id === id);
-    if (index !== -1) {
-      comments[index].likes += 1;
-      localStorage.setItem(COMMENTS_KEY, JSON.stringify(comments));
-      return comments[index];
-    }
-    return null;
-  }, []);
-
-  const deleteComment = useCallback(async (id: string): Promise<void> => {
-    const raw = localStorage.getItem(COMMENTS_KEY);
-    let comments: Comment[] = raw ? JSON.parse(raw) : [];
-    comments = comments.filter((c) => c.id !== id);
-    localStorage.setItem(COMMENTS_KEY, JSON.stringify(comments));
-  }, []);
-
-  // === Community Reports ===
-
-  const saveReport = useCallback(async (reportData: Omit<Report, "id" | "createdAt">): Promise<void> => {
-    const raw = localStorage.getItem(REPORTS_KEY);
-    const reports: Report[] = raw ? JSON.parse(raw) : [];
-    const newReport: Report = {
-      ...reportData,
-      id: `r_${Math.random().toString(36).slice(2, 9)}`,
-      createdAt: new Date().toISOString(),
-    };
-    localStorage.setItem(REPORTS_KEY, JSON.stringify([newReport, ...reports]));
+    return data;
   }, []);
 
   // === User Profile ===
@@ -542,17 +450,10 @@ export function useStorage() {
     loadAllPeriods,
     savePeriods,
     getLatestPeriod,
-    listPosts,
-    getPostById,
-    savePost,
-    deletePost,
-    likePost,
-    listLikedPosts,
-    loadCommentsByPostId,
-    saveComment,
-    likeComment,
-    deleteComment,
-    saveReport,
+    listCommunityTopics,
+    createCommunityTopic,
+    listCommunityPosts,
+    createCommunityPost,
     saveProfile,
     loadProfile,
     getUserProfile,
@@ -572,17 +473,10 @@ export function useStorage() {
     loadAllPeriods,
     savePeriods,
     getLatestPeriod,
-    listPosts,
-    getPostById,
-    savePost,
-    deletePost,
-    likePost,
-    listLikedPosts,
-    loadCommentsByPostId,
-    saveComment,
-    likeComment,
-    deleteComment,
-    saveReport,
+    listCommunityTopics,
+    createCommunityTopic,
+    listCommunityPosts,
+    createCommunityPost,
     saveProfile,
     loadProfile,
     getUserProfile,

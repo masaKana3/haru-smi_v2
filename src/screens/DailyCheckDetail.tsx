@@ -39,8 +39,7 @@ type Props = {
   isToday: boolean;
   readOnly?: boolean;
   onBack: () => void;
-  onUpdate: (updated: DailyRecord) => void;
-  onSaved?: () => void;
+  onSave: (record: DailyRecord) => void;
 };
 
 export default function DailyCheckDetail({
@@ -48,8 +47,7 @@ export default function DailyCheckDetail({
   selectedDate,
   isToday,
   onBack,
-  onUpdate,
-  onSaved,
+  onSave,
 }: Props) {
   const storage = useStorage();
 
@@ -138,6 +136,8 @@ export default function DailyCheckDetail({
   const [medicationChange, setMedicationChange] = useState(false);
   const [bloodTestNote, setBloodTestNote] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null); // デイリー項目の開閉用
+  const [localAnswers, setLocalAnswers] = useState<DailyRecord['answers']>(effectiveData.answers);
+
 
   // アコーディオン開閉状態
   const [isPeriodOpen, setIsPeriodOpen] = useState(true);
@@ -149,6 +149,8 @@ export default function DailyCheckDetail({
     // 1. 生理記録の確認
     const list = JSON.parse(localStorage.getItem("haru_periods") || "[]") as PeriodRecord[];
     const periodRecord = list.find((r) => r.start === effectiveData.date);
+
+    setLocalAnswers(effectiveData.answers);
 
     if (periodRecord) {
       setIsPeriodLocal(true);
@@ -178,12 +180,8 @@ export default function DailyCheckDetail({
   }, [effectiveData]);
 
   const handleSelect = (key: string, value: DailyAnswerValue | string) => {
-    // answersを更新して親に通知（UI上の表示更新のため）
-    const updated: DailyRecord = {
-      ...effectiveData,
-      answers: { ...effectiveData.answers, [key]: value },
-    };
-    onUpdate(updated);
+    setLocalAnswers(prev => ({ ...prev, [key]: value }));
+    setExpandedId(null);
   };
 
   const toggleSymptom = (key: keyof PeriodSymptoms) => {
@@ -313,7 +311,7 @@ export default function DailyCheckDetail({
         {isDailyOpen && (
           <div className="mb-6 space-y-4">
             {/* ▼ デイリー項目一覧（体温・出血以外） */}
-            {Object.keys(answers).map((key) => {
+            {Object.keys(localAnswers).map((key) => {
               // 体温と出血は別途UIがあるのでここではスキップ
               if (key === "temperature" || key === "bleeding") return null;
 
@@ -329,7 +327,7 @@ export default function DailyCheckDetail({
                         onClick={() => setExpandedId(expandedId === key ? null : key)}
                         className="w-full bg-brandInput py-2 px-3 rounded-input text-left"
                       >
-                        {answers[key]}
+                        {localAnswers[key]}
                       </button>
 
                       {/* 選択肢（展開時） */}
@@ -419,13 +417,13 @@ export default function DailyCheckDetail({
 
         {/* ▼ 保存ボタン */}
         <button
-          onClick={async () => {
+          onClick={() => {
             // 1. haru_periods の更新（同期）
+            // This logic should ideally be in `useStorage` as well, but for now we keep it
             const list = JSON.parse(localStorage.getItem("haru_periods") || "[]") as PeriodRecord[];
             let nextList = [...list];
 
             if (isPeriodLocal) {
-              // ONの場合：既存があれば更新、なければ追加
               if (bleeding === "無い") {
                 alert("生理中は出血量を選択してください。");
                 return;
@@ -444,18 +442,15 @@ export default function DailyCheckDetail({
                 nextList.sort((a, b) => (a.start > b.start ? -1 : 1));
               }
             } else {
-              // OFFの場合：リストから削除
               nextList = nextList.filter((r) => r.start !== effectiveData.date);
             }
             localStorage.setItem("haru_periods", JSON.stringify(nextList));
 
             // 2. DailyRecord の保存
-            // answers に体温と出血（ONの場合）を反映
-            const finalAnswers = { ...effectiveData.answers };
+            const finalAnswers = { ...localAnswers };
             if (temperature) finalAnswers.temperature = temperature;
             finalAnswers.bleeding = bleeding;
 
-            // その他の項目を保存（文字列として保存）
             if (hospitalVisit) finalAnswers.hospital_visit = "true";
             else delete finalAnswers.hospital_visit;
 
@@ -464,10 +459,6 @@ export default function DailyCheckDetail({
 
             if (bloodTestNote) finalAnswers.blood_test_note = bloodTestNote;
             else delete finalAnswers.blood_test_note;
-
-            // OFFの場合は出血情報を削除するか、そのままにするか。
-            // ここでは整合性のため、OFFなら出血情報はanswersから消す（または更新しない）のが安全だが、
-            // 既存の回答を消してしまうリスクもあるため、上書きのみ行う。
             
             const recordToSave: DailyRecord = {
               ...effectiveData,
@@ -476,14 +467,8 @@ export default function DailyCheckDetail({
               memo: memo,
             };
 
-            await storage.saveDailyRecord(recordToSave);
-            
+            onSave(recordToSave);
             alert("記録を保存しました！");
-
-            // 親コンポーネントの状態も更新
-            onUpdate(recordToSave);
-
-            onSaved?.();
           }}
           className="mt-6 w-full py-3 bg-brandAccent text-white rounded-button"
         >
@@ -494,3 +479,4 @@ export default function DailyCheckDetail({
     </div>
   );
 }
+

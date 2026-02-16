@@ -40,6 +40,7 @@ type Props = {
   total: number | null;
   onDailyCheck: () => void;
   todayDaily: DailyRecord | null;
+  historyRecords: DailyRecord[];
   onSelectDate: (date: string) => void;
   selectedDate: string;
   onShowHistory: () => void;
@@ -49,30 +50,6 @@ type Props = {
   onOpenSettings: () => void;
   latestPeriod: PeriodRecord | null;
 };
-
-function loadDailyRecords(): DailyRecord[] {
-  if (typeof localStorage === "undefined") return [];
-  const list: DailyRecord[] = [];
-
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key || !key.startsWith("haru_daily_")) continue;
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
-      try {
-        const parsed = JSON.parse(raw) as DailyRecord;
-        list.push(parsed);
-      } catch {
-        // ignore malformed
-      }
-    }
-  } catch {
-    return [];
-  }
-
-  return list.sort((a, b) => (a.date < b.date ? 1 : -1));
-}
 
 function buildSummaryText(preferred?: string | null, fallback?: string | null) {
   // まず改行・余分なスペースを除去（ここが最重要）
@@ -103,11 +80,12 @@ export default function DashboardScreen({
   total, 
   onDailyCheck, 
   todayDaily, 
-  onSelectDate,   // ← 追加①
-  selectedDate,   // ← 追加②
-  onShowHistory,   // ← 追加③
-  onOpenSMIHistory,      // ★追加する！
-  onOpenInsight,     // ← ★ これを追加！
+  historyRecords,
+  onSelectDate,
+  selectedDate,
+  onShowHistory,
+  onOpenSMIHistory,
+  onOpenInsight,
   onOpenCommunity,
   onOpenSettings,
   latestPeriod,
@@ -127,8 +105,8 @@ export default function DashboardScreen({
     : null;
 
   const calendarEntries = useMemo(
-    () => buildCalendarEntries(loadDailyRecords()),
-    [todayDaily, selectedDate]
+    () => buildCalendarEntries(historyRecords),
+    [historyRecords]
   );
 
   // ▼ カレンダー連携用データの準備

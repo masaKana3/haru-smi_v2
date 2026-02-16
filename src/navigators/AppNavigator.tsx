@@ -73,10 +73,10 @@ export default function AppNavigator({
           total={totalScore}
           onDailyCheck={onStartDailyCheck}
           todayDaily={todayDaily}
+          historyRecords={historyRecords}
           onSelectDate={onSelectDate}
           selectedDate={selectedDate}
           onShowHistory={() => nav.navigate("history")}
-          onStartSMI={() => nav.navigate("smi")}
           onOpenSMIHistory={() => nav.navigate("smi_history")}
           onOpenInsight={() => nav.navigate("insight")}
           onOpenCommunity={() => nav.navigate("community")}
@@ -103,8 +103,7 @@ export default function AppNavigator({
           isToday={selectedDate === new Date().toISOString().slice(0, 10)}
           readOnly={selectedDate > new Date().toISOString().slice(0, 10)}
           onBack={() => nav.goBack("dashboard")}
-          onUpdate={onUpdateTodayDaily}
-          onSaved={() => nav.navigate("dashboard")}
+          onSave={onSaveDaily}
         />
       )}
 
