@@ -7,7 +7,7 @@ type Props = {
   onBack: () => void;
   onSaved: (postId: string) => void;
   defaultTopicId?: string | null;
-  defaultType?: "thread" | "diary";
+  defaultType?: "thread" | "diary" | "official";
   currentUserId: string;
   editingPostId?: string | null;
 };
@@ -24,7 +24,7 @@ export default function PostCreateScreen({
   const storage = useStorage();
   const isEditing = !!editingPostId;
 
-  const [type, setType] = useState<"thread" | "diary">(defaultType);
+  const [type, setType] = useState<"thread" | "diary" | "official">(defaultType);
   const [topicId, setTopicId] = useState<string | "">(defaultTopicId || "");
   const [visibility, setVisibility] = useState<Visibility>("public");
   const [title, setTitle] = useState("");
@@ -53,7 +53,7 @@ export default function PostCreateScreen({
       setError("内容を入力してください。");
       return;
     }
-    if (type === "thread" && !topicId) {
+    if ((type === "thread" || type === "official") && !topicId) {
       setError("テーマを選択してください。");
       return;
     }
@@ -64,7 +64,7 @@ export default function PostCreateScreen({
       content,
       authorId: currentUserId,
       visibility,
-      topicId: type === "thread" ? topicId : undefined,
+      topicId: (type === "thread" || type === "official") ? topicId : undefined,
     };
 
     const post = await storage.savePost({ ...postData, id: editingPostId || undefined });
@@ -86,35 +86,38 @@ export default function PostCreateScreen({
         </div>
 
         <div className="space-y-3">
-          <div className="space-y-1">
-            <div className="text-sm font-semibold">タイプ</div>
-            <div className="flex items-center gap-3 text-sm">
-              <label className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  checked={type === "diary"}
-                  onChange={() => setType("diary")}
-                />
-                日記
-              </label>
-              <label className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  checked={type === "thread"}
-                  onChange={() => setType("thread")}
-                />
-                テーマへの投稿
-              </label>
+          {defaultType !== 'official' && (
+            <div className="space-y-1">
+              <div className="text-sm font-semibold">タイプ</div>
+              <div className="flex items-center gap-3 text-sm">
+                <label className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    checked={type === "diary"}
+                    onChange={() => setType("diary")}
+                  />
+                  日記
+                </label>
+                <label className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    checked={type === "thread"}
+                    onChange={() => setType("thread")}
+                  />
+                  テーマへの投稿
+                </label>
+              </div>
             </div>
-          </div>
+          )}
 
-          {type === "thread" && (
+          {(type === "thread" || type === "official") && (
             <div className="space-y-1">
               <div className="text-sm font-semibold">テーマを選択</div>
               <select
                 value={topicId}
                 onChange={(e) => setTopicId(e.target.value)}
                 className="w-full border border-brandAccentAlt rounded-card px-3 py-2 text-sm"
+                disabled={type === 'official'}
               >
                 <option value="">選択してください</option>
                 {topics.map((t: Topic) => (

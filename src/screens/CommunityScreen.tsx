@@ -7,7 +7,7 @@ import { UserProfile } from "../types/user";
 
 type Props = {
   onBack: () => void;
-  onCreatePost: (opts?: { topicId?: string; type?: "thread" | "diary" }) => void;
+  onCreatePost: (opts?: { topicId?: string; type?: "thread" | "diary" | "official" }) => void;
   onOpenThread: (topicId: string) => void;
   onOpenDiary: () => void;
   onOpenPostDetail: (postId: string) => void;
@@ -28,6 +28,15 @@ export default function CommunityScreen({
   const topics = useMemo(() => getTopics(), []);
   const [posts, setPosts] = useState<Post[]>([]);
   const [authorProfiles, setAuthorProfiles] = useState<{ [key: string]: UserProfile }>({});
+  const [isUserAdmin, setIsUserAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      const admin = await storage.isAdmin();
+      setIsUserAdmin(admin);
+    };
+    checkAdminStatus();
+  }, [storage]);
 
   const loadPosts = async () => {
     const data = await storage.listPosts({ isPublic: true });
@@ -116,12 +125,14 @@ export default function CommunityScreen({
                   >
                     スレッドを見る
                   </button>
-                  <button
-                    className="text-brandAccent underline"
-                    onClick={() => onCreatePost({ topicId: topic.id, type: "thread" })}
-                  >
-                    投稿する
-                  </button>
+                  {isUserAdmin && (
+                    <button
+                      className="text-brandAccent underline"
+                      onClick={() => onCreatePost({ topicId: topic.id, type: "official" })}
+                    >
+                      投稿する
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

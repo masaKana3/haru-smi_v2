@@ -34,20 +34,67 @@ export default function App() {
     new Date().toISOString().slice(0, 10)
   );
 
-  // ユーザー状態の同期
+  // ユーザー状態の同期とデータのリセット
   useEffect(() => {
     if (!authLoading) {
-      setCurrentUserId(user?.id ?? null);
+      const newUserId = user?.id ?? null;
+      setCurrentUserId(newUserId);
+      // ユーザーがログアウトした場合、すべてのパーソナルデータをクリアする
+      if (!newUserId) {
+        setTotalScore(null);
+        setSmiAnswers(null);
+        setDailyItems([]);
+        setTodayDaily(null);
+        setHistoryRecords([]);
+        setLatestPeriod(null);
+      }
     }
   }, [user, authLoading]);
 
+  // ユーザーに紐づくすべてのパーソナルデータを読み込むEffect
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const loadAllPersonalData = async () => {
+      // 並列でデータを取得
+      const [smiResult, dailyRecords, latestPeriodResult] = await Promise.all([
+        storage.loadSMIResult(),
+        storage.loadAllDailyRecords(),
+        storage.getLatestPeriod(),
+      ]);
+
+      // SMI結果の更新
+      if (smiResult.done) {
+        setTotalScore(smiResult.total);
+        setSmiAnswers(smiResult.answers);
+      } else {
+        setTotalScore(null);
+        setSmiAnswers(null);
+      }
+
+      // 全デイリー記録の更新
+      setHistoryRecords(dailyRecords);
+
+      // 今日の記録を全履歴から探してセット
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayRecord = dailyRecords.find((r) => r.date === todayStr) || null;
+      setTodayDaily(todayRecord);
+
+      // 最新の生理記録の更新
+      setLatestPeriod(latestPeriodResult);
+    };
+
+    loadAllPersonalData();
+  }, [currentUserId, storage]); // ユーザー変更時のみ実行
+
   const handleLoginSuccess = (userId: string) => {
-    // Supabase Auth の状態変化で自動的に更新されるため、ここではナビゲーションのみ
+    // Supabase Auth の状態変化で自動的に更新されるため、ナビゲーションのみ
     nav.navigate("dashboard");
   };
 
   const handleLogout = async () => {
     await signOut();
+    // stateのクリアは上記のuseEffectに任せる
   };
 
   // SMI 完了
@@ -55,7 +102,6 @@ export default function App() {
     try {
       setTotalScore(total);
       setSmiAnswers(answers);
-      await storage.saveSMIResult(total, answers);
       await storage.saveSMIHistory(total, answers);
     } catch (error) {
       console.error("SMI save error:", error);
@@ -66,16 +112,15 @@ export default function App() {
 
   // ★ カレンダーの日付が選択されたら
   const handleSelectDate = async (dateStr: string) => {
-    console.log("選択された日付:", dateStr);
-
     const today = new Date().toISOString().slice(0, 10);
     setSelectedDate(dateStr);
-    const record = await storage.loadDailyRecord(dateStr);
+    
+    // 履歴から該当日付の記録を探す（DBアクセスを減らす）
+    const record = historyRecords.find(r => r.date === dateStr) || null;
     setTodayDaily(record);
 
     // ▼ 未来の日付は禁止
     if (dateStr > today) {
-      console.log("未来の日付のため記録できません");
       return;
     }
 
@@ -84,7 +129,6 @@ export default function App() {
       if (record) {
         nav.navigate("detail");
       } else {
-        // 今日の記録がない場合はデイリーチェックを開始
         handleStartDailyCheck();
       }
       return;
@@ -98,13 +142,11 @@ export default function App() {
   const handleStartDailyCheck = () => {
     const today = new Date().toISOString().slice(0, 10);
 
-    // 今日以外は daily を開かせない
     if (selectedDate !== today) {
       alert("今日の記録のみ入力できます。");
       return;
     }
 
-    // 今日の場合のみ入力画面へ
     if (!smiAnswers) {
       setDailyItems([]);
     } else {
@@ -118,8 +160,12 @@ export default function App() {
 
   // デイリーチェック保存
   const handleSaveDaily = async (data: DailyRecord) => {
-    setTodayDaily(data);
     await storage.saveDailyRecord(data);
+    setTodayDaily(data); // 今日の記録を更新
+
+    // 保存後に全履歴を再取得してカレンダー表示を更新
+    const updatedRecords = await storage.loadAllDailyRecords();
+    setHistoryRecords(updatedRecords);
 
     setSelectedDate(data.date);
     nav.navigate("dashboard");
@@ -130,52 +176,6 @@ export default function App() {
     setViewingUserId(userId);
     nav.navigate("profile");
   };
-
-  // ★★★ Step B：SMIを復元（←ここに追加）
-  useEffect(() => {
-    const load = async () => {
-      const { done, total, answers } = await storage.loadSMIResult();
-
-      if (done) {
-        if (total !== null) setTotalScore(total);
-        if (answers) setSmiAnswers(answers);
-      }
-      // 診断済みかどうかにかかわらず、初期表示はDashboardを優先
-      nav.navigate("dashboard");
-    };
-    load();
-  }, [storage]);
-
-  // 今日の記録の復元
-  useEffect(() => {
-    const load = async () => {
-      const today = new Date().toISOString().slice(0, 10);
-      const record = await storage.loadDailyRecord(today);
-
-      if (record) {
-        setTodayDaily(record);
-      }
-    };
-    load();
-  }, [storage]);
-
-  // ▼ 過去の記録を全部取得して並べる
-  useEffect(() => {
-    const load = async () => {
-      const records = await storage.loadAllDailyRecords();
-      setHistoryRecords(records);
-    };
-    load();
-  }, [todayDaily, selectedDate, storage]);
-
-  // ▼ 最新の生理記録を取得
-  useEffect(() => {
-    const load = async () => {
-      const period = await storage.getLatestPeriod();
-      setLatestPeriod(period);
-    };
-    load();
-  }, [storage, nav.screen]);
 
   if (authLoading) {
     return <div className="w-full h-screen flex items-center justify-center">Loading...</div>;

@@ -35,8 +35,8 @@ export default function DailyCheckScreen({ dailyItems, onComplete, onCancel }: P
   useEffect(() => {
     const fetchProfile = async () => {
       const profile = await storage.loadProfile();
-      if (profile?.avatar_url) {
-        setUserAvatar(profile.avatar_url);
+      if (profile?.avatarUrl) {
+        setUserAvatar(profile.avatarUrl);
       }
     };
     fetchProfile();

@@ -16,18 +16,18 @@ export default function ChatBubble({ from, text, avatarUrl }: ChatBubbleProps) {
       }`}
     >
       {/* アイコン */}
-      <div className="w-8 h-8 rounded-full flex-shrink-0">
+      <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden">
         {isBot ? (
           <img
             src="http://flat-icon-design.com/f/f_object_86/s512_f_object_86_0bg.png"
             alt="Bot Avatar"
-            className="w-full h-full rounded-full object-cover"
+            className="w-full h-full object-cover"
           />
-        ) : avatarUrl ? (
+        ) : avatarUrl && avatarUrl.startsWith("http") ? (
           <img
             src={avatarUrl}
             alt="User Avatar"
-            className="w-full h-full rounded-full object-cover"
+            className="w-full h-full object-cover"
           />
         ) : (
           <div className="w-full h-full rounded-full bg-gray-300" />

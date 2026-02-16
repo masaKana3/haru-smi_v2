@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from "react";
 import { Screen } from "../types/navigation";
 
 export function useNavigation() {
-  const [screen, setScreen] = useState<Screen>("smi");
+  const [screen, setScreen] = useState<Screen>("dashboard");
   const [prevScreen, setPrevScreen] = useState<Screen | null>(null);
 
   // コミュニティ機能用の状態

@@ -25,11 +25,16 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 export function useStorage() {
-  // SMIデータの保存 (Cache only)
+  const isAdmin = useCallback(async (): Promise<boolean> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.email === 'admin@test.jp';
+  }, []);
+
+  // SMIデータの保存 (Cache only) - この関数はSupabaseに移行したため処理を空にする
   const saveSMIResult = useCallback(async (total: number, answers: SMIConvertedAnswer[]) => {
-    localStorage.setItem("haru_smi_total", String(total));
-    localStorage.setItem("haru_smi_answers", JSON.stringify(answers));
-    localStorage.setItem("haru_smi_done", "true");
+    // localStorage.setItem("haru_smi_total", String(total));
+    // localStorage.setItem("haru_smi_answers", JSON.stringify(answers));
+    // localStorage.setItem("haru_smi_done", "true");
   }, []);
 
   // SMIデータの読み込み
@@ -53,34 +58,13 @@ export function useStorage() {
         };
       }
     }
-
-    const done = localStorage.getItem("haru_smi_done") === "true";
-    const totalStr = localStorage.getItem("haru_smi_total");
-    const answersStr = localStorage.getItem("haru_smi_answers");
-
-    const total = totalStr ? Number(totalStr) : null;
-    let answers: SMIConvertedAnswer[] | null = null;
-    if (answersStr) {
-      try {
-        answers = JSON.parse(answersStr) as SMIConvertedAnswer[];
-      } catch (e) {
-        console.error("Failed to parse SMI answers", e);
-      }
-    }
-    return { done, total, answers };
+    
+    // ユーザーに紐づくデータがない場合はデフォルト値を返す
+    return { done: false, total: null, answers: null };
   }, []);
 
   // SMI履歴の保存
   const saveSMIHistory = useCallback(async (total: number, answers: SMIConvertedAnswer[]) => {
-    const raw = localStorage.getItem("haru_smi_history");
-    const history: SMIRecord[] = raw ? JSON.parse(raw) : [];
-    const newRecord: SMIRecord = {
-      date: new Date().toISOString(),
-      total,
-      answers,
-    };
-    localStorage.setItem("haru_smi_history", JSON.stringify([newRecord, ...history]));
-
     const { data: authData } = await supabase.auth.getUser();
     const user = authData.user;
     if (user) {
@@ -112,22 +96,11 @@ export function useStorage() {
       }
     }
 
-    const raw = localStorage.getItem("haru_smi_history");
-    if (!raw) return [];
-    try {
-      const history = JSON.parse(raw) as SMIRecord[];
-      history.sort((a, b) => (a.date < b.date ? 1 : -1));
-      return history;
-    } catch {
-      return [];
-    }
+    return [];
   }, []);
 
   // 日々の記録の保存
   const saveDailyRecord = useCallback(async (data: DailyRecord) => {
-    const key = `haru_daily_${data.date}`;
-    localStorage.setItem(key, JSON.stringify(data));
-
     const { data: authData } = await supabase.auth.getUser();
     const user = authData.user;
     if (user) {
@@ -159,19 +132,12 @@ export function useStorage() {
         return {
           date: row.date,
           answers: (row.answers as unknown) as DailyRecord['answers'],
+          // items はdaily_checksテーブルにないので、ここで返すのはやめる
+          // items: row.items
         };
       }
     }
-
-    const key = `haru_daily_${date}`;
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw) as DailyRecord;
-    } catch (e) {
-      console.error(`Failed to parse daily record for ${date}`, e);
-      return null;
-    }
+    return null;
   }, []);
 
   // 日々の記録の読み込み（全履歴）
@@ -191,46 +157,78 @@ export function useStorage() {
         }));
       }
     }
-
-    const records = Object.keys(localStorage)
-      .filter((key) => key.startsWith("haru_daily_"))
-      .map((key) => {
-        const value = localStorage.getItem(key);
-        if (!value) return null;
-        try {
-          return JSON.parse(value) as DailyRecord;
-        } catch {
-          return null;
-        }
-      })
-      .filter((record): record is DailyRecord => record !== null)
-      .sort((a, b) => (a.date < b.date ? 1 : -1));
-    return records;
+    return [];
   }, []);
 
   // 生理記録の読み込み（全件）
   const loadAllPeriods = useCallback(async (): Promise<PeriodRecord[]> => {
-    const raw = localStorage.getItem("haru_periods");
-    if (!raw) return [];
-    try {
-      return JSON.parse(raw) as PeriodRecord[];
-    } catch {
+    const { data: authData } = await supabase.auth.getUser();
+    const user = authData.user;
+    if (!user) return [];
+    
+    const { data, error } = await supabase
+      .from("periods")
+      .select("start, end")
+      .eq("user_id", user.id)
+      .order("start", { ascending: false });
+
+    if (error) {
+      console.error("Failed to load periods from Supabase:", error);
       return [];
+    }
+    return (data || []) as PeriodRecord[];
+  }, []);
+
+  // 生理記録の保存
+  const savePeriods = useCallback(async (periods: PeriodRecord[]) => {
+    const { data: authData } = await supabase.auth.getUser();
+    const user = authData.user;
+    if (!user) return;
+
+    // 既存のデータをすべて削除
+    const { error: deleteError } = await supabase
+      .from("periods")
+      .delete()
+      .eq("user_id", user.id);
+
+    if (deleteError) {
+      console.error("Failed to delete old periods from Supabase:", deleteError);
+      return;
+    }
+
+    // 新しいデータを挿入
+    if (periods.length > 0) {
+      const dataToInsert = periods.map(p => ({
+        user_id: user.id,
+        start: p.start,
+        end: p.end,
+      }));
+      const { error: insertError } = await supabase.from("periods").insert(dataToInsert);
+      if (insertError) {
+        console.error("Failed to save periods to Supabase:", insertError);
+      }
     }
   }, []);
 
   // 生理記録の読み込み（最新）
   const getLatestPeriod = useCallback(async (): Promise<PeriodRecord | null> => {
-    const raw = localStorage.getItem("haru_periods");
-    if (!raw) return null;
-    try {
-      const list = JSON.parse(raw) as PeriodRecord[];
-      if (list.length === 0) return null;
-      list.sort((a, b) => (a.start < b.start ? 1 : -1));
-      return list[0];
-    } catch {
+    const { data: authData } = await supabase.auth.getUser();
+    const user = authData.user;
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from("periods")
+      .select("start, end")
+      .eq("user_id", user.id)
+      .order("start", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    if (error) {
+      console.error("Failed to load latest period from Supabase:", error);
       return null;
     }
+    return data as PeriodRecord | null;
   }, []);
 
   // === Community Posts ===
@@ -241,7 +239,7 @@ export function useStorage() {
       topicId?: string;
       visibility?: Visibility;
       isPublic?: boolean;
-      type?: "thread" | "diary";
+      type?: "thread" | "diary" | "official";
     }): Promise<Post[]> => {
       const raw = localStorage.getItem(POSTS_KEY);
       let posts: Post[] = raw ? JSON.parse(raw) : [];
@@ -466,7 +464,12 @@ export function useStorage() {
       const raw = localStorage.getItem(key);
       if (raw) {
         try {
-          return JSON.parse(raw) as UserProfile;
+          const localProfile = JSON.parse(raw) as any;
+          return {
+            nickname: localProfile.nickname || "",
+            bio: localProfile.bio || "",
+            avatarUrl: localProfile.avatarUrl || localProfile.avatar_url || undefined,
+          } as UserProfile;
         } catch {
           return null;
         }
@@ -537,6 +540,7 @@ export function useStorage() {
     loadDailyRecord,
     loadAllDailyRecords,
     loadAllPeriods,
+    savePeriods,
     getLatestPeriod,
     listPosts,
     getPostById,
@@ -556,6 +560,7 @@ export function useStorage() {
     loginUser,
     checkEmailExists,
     resetPassword,
+    isAdmin,
   }), [
     saveSMIResult,
     loadSMIResult,
@@ -565,6 +570,7 @@ export function useStorage() {
     loadDailyRecord,
     loadAllDailyRecords,
     loadAllPeriods,
+    savePeriods,
     getLatestPeriod,
     listPosts,
     getPostById,
@@ -584,5 +590,6 @@ export function useStorage() {
     loginUser,
     checkEmailExists,
     resetPassword,
+    isAdmin,
   ]);
 }
