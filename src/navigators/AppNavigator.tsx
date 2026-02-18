@@ -154,6 +154,7 @@ export default function AppNavigator({
           onBack={() => nav.navigate("community")}
           onCreatePost={(topicId) => communityNav.handleCreatePost({ topicId, type: "thread" })}
           onOpenPostDetail={communityNav.handleOpenPostDetail}
+          onOpenProfile={onOpenProfile}
           currentUserId={currentUserId}
         />
       )}
@@ -174,6 +175,7 @@ export default function AppNavigator({
           currentUserId={currentUserId}
           onEdit={() => communityNav.handleEditPost(nav.activePostId!)}
           onDeleted={() => communityNav.handlePostDeleted()}
+          onOpenProfile={onOpenProfile}
         />
       )}
 

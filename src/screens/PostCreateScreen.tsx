@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { getTopics } from "../logic/communityLogic";
-import { Topic, Visibility } from "../types/community";
+import React, { useEffect, useState } from "react";
+import { CommunityPost, CommunityTopic } from "../types/community";
 import { useStorage } from "../hooks/useStorage";
 
 type Props = {
@@ -20,16 +19,24 @@ export default function PostCreateScreen({
   currentUserId,
   editingPostId = null,
 }: Props) {
-  const topics = useMemo(() => getTopics(), []);
   const storage = useStorage();
+  const [topics, setTopics] = useState<CommunityTopic[]>([]);
   const isEditing = !!editingPostId;
 
   const [type, setType] = useState<"thread" | "diary" | "official">(defaultType);
   const [topicId, setTopicId] = useState<string | "">(defaultTopicId || "");
-  const [visibility, setVisibility] = useState<Visibility>("public");
+  const [isPublic, setIsPublic] = useState(true);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTopics = async () => {
+      const topicData = await storage.listCommunityTopics();
+      setTopics(topicData);
+    };
+    fetchTopics();
+  }, [storage]);
 
   useEffect(() => {
     if (isEditing && editingPostId) {
@@ -38,9 +45,9 @@ export default function PostCreateScreen({
         if (post) {
           setTitle(post.title || "");
           setContent(post.content);
-          setType(post.type);
-          setTopicId(post.topicId || "");
-          setVisibility(post.visibility);
+          setType(post.type || 'diary');
+          setTopicId(post.topic_id || "");
+          setIsPublic(post.is_public ?? true);
         }
       };
       loadPost();
@@ -59,16 +66,20 @@ export default function PostCreateScreen({
     }
 
     const postData = {
+      id: editingPostId || undefined,
       type,
-      title: title.trim() || undefined,
+      title: title.trim(),
       content,
-      authorId: currentUserId,
-      visibility,
+      is_public: isPublic,
       topicId: (type === "thread" || type === "official") ? topicId : undefined,
     };
 
-    const post = await storage.savePost({ ...postData, id: editingPostId || undefined });
-    onSaved(post.id);
+    const post = await storage.createCommunityPost(postData);
+    if (post && post.id) {
+      onSaved(post.id);
+    } else {
+      setError("投稿の保存に失敗しました。");
+    }
   };
 
   return (
@@ -79,7 +90,7 @@ export default function PostCreateScreen({
             onClick={onBack}
             className="text-sm text-brandAccent hover:opacity-80 transition-opacity"
           >
-            ← コミュニティ
+            ← 戻る
           </button>
           <div className="text-md font-semibold">{isEditing ? "投稿を編集" : "投稿を作成"}</div>
           <div className="w-10" />
@@ -120,7 +131,7 @@ export default function PostCreateScreen({
                 disabled={type === 'official'}
               >
                 <option value="">選択してください</option>
-                {topics.map((t: Topic) => (
+                {topics.map((t: CommunityTopic) => (
                   <option key={t.id} value={t.id}>
                     {t.title}
                   </option>
@@ -135,16 +146,16 @@ export default function PostCreateScreen({
               <label className="flex items-center gap-1">
                 <input
                   type="radio"
-                  checked={visibility === "public"}
-                  onChange={() => setVisibility("public")}
+                  checked={isPublic}
+                  onChange={() => setIsPublic(true)}
                 />
                 公開
               </label>
               <label className="flex items-center gap-1">
                 <input
                   type="radio"
-                  checked={visibility === "private"}
-                  onChange={() => setVisibility("private")}
+                  checked={!isPublic}
+                  onChange={() => setIsPublic(false)}
                 />
                 非公開
               </label>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PostCard from "../components/PostCard";
-import { Post } from "../types/community";
+import { CommunityPost } from "../types/community";
 import { useStorage } from "../hooks/useStorage";
 import { UserProfile } from "../types/user";
 import { useSupabaseAuth } from "../hooks/useSupabaseAuth";
@@ -24,31 +24,41 @@ export default function ProfileScreen({
 }: Props) {
   const storage = useStorage();
   const { user } = useSupabaseAuth();
-  const [myPosts, setMyPosts] = useState<Post[]>([]);
-  const [likedPosts, setLikedPosts] = useState<Post[]>([]);
+  const [myPosts, setMyPosts] = useState<CommunityPost[]>([]);
+  const [likedPosts, setLikedPosts] = useState<CommunityPost[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [totalLikes, setTotalLikes] = useState(0);
   const [activeTab, setActiveTab] = useState<"posts" | "likes">("posts");
+  const [isUserAdmin, setIsUserAdmin] = useState(false);
 
   const isMe = currentUserId === viewingUserId;
 
   const load = async () => {
-    // 投稿を取得（自分なら非公開も含む、他人なら公開のみ）
-    const myPostsData = await storage.listPosts({
-      authorId: viewingUserId,
-      isPublic: !isMe,
-    });
-    setMyPosts(myPostsData);
+    // Check admin status
+    storage.isAdmin().then(setIsUserAdmin);
 
-    const likedPostsData = await storage.listLikedPosts(viewingUserId);
-    setLikedPosts(likedPostsData);
-
-    // 獲得したいいね総数を計算
-    const likes = myPosts.reduce((sum, post) => sum + post.likes, 0);
-    setTotalLikes(likes);
-
+    // プロフィール情報を取得
     const userProfile = await storage.getUserProfile(viewingUserId);
     setProfile(userProfile);
+
+    // 自分のプロフィールの場合は、自分の投稿といいねした投稿を両方読み込む
+    if (isMe) {
+      const myPostsData = await storage.loadUserPosts(viewingUserId);
+      setMyPosts(myPostsData);
+
+      const likedPostsData = await storage.listLikedPosts(viewingUserId);
+      setLikedPosts(likedPostsData);
+    } else {
+      // 他のユーザーのプロフィールの場合は、公開投稿のみを読み込む
+      const publicPostsData = await storage.loadUserPublicPosts(viewingUserId);
+      setMyPosts(publicPostsData);
+      setLikedPosts([]); // 他人の「いいね」は表示しない
+      setActiveTab("posts"); // 必ず「投稿」タブをデフォルトにする
+    }
+    
+    // 総獲得いいね数を取得
+    const totalLikesCount = await storage.getUserTotalLikes(viewingUserId);
+    setTotalLikes(totalLikesCount);
   };
 
   useEffect(() => {
@@ -57,7 +67,15 @@ export default function ProfileScreen({
 
   const handleLike = async (postId: string) => {
     await storage.likePost(postId, currentUserId);
-    load();
+    // Note: This won't visually update likes as the feature is not fully implemented.
+    // load();
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    const success = await storage.deletePost(postId);
+    if (success) {
+      load();
+    }
   };
 
   const displayPosts = activeTab === "posts" ? myPosts : likedPosts;
@@ -70,7 +88,7 @@ export default function ProfileScreen({
             onClick={onBack}
             className="text-sm text-brandAccent hover:opacity-80 transition-opacity"
           >
-            {isMe ? "設定へ" : "戻る"}
+            戻る
           </button>
           <div className="text-md font-semibold">プロフィール</div>
           <div className="w-10" />
@@ -89,11 +107,7 @@ export default function ProfileScreen({
             )}
           </div>
           <div className="font-semibold text-lg">
-            {profile?.nickname ||
-              (isMe && user?.user_metadata?.full_name) ||
-              (isMe && user?.email?.split("@")[0]) ||
-              "ユーザー"
-            }
+            {profile?.nickname || "ユーザー"}
           </div>
           
           {profile?.bio && (
@@ -132,16 +146,18 @@ export default function ProfileScreen({
             >
               {isMe ? "自分の投稿" : "投稿"}
             </button>
-            <button
-              onClick={() => setActiveTab("likes")}
-              className={`flex-1 pb-2 text-sm font-semibold transition-colors ${
-                activeTab === "likes"
-                  ? "text-brandAccent border-b-2 border-brandAccent"
-                  : "text-brandMuted"
-              }`}
-            >
-              いいねした投稿
-            </button>
+            {isMe && (
+              <button
+                onClick={() => setActiveTab("likes")}
+                className={`flex-1 pb-2 text-sm font-semibold transition-colors ${
+                  activeTab === "likes"
+                    ? "text-brandAccent border-b-2 border-brandAccent"
+                    : "text-brandMuted"
+                }`}
+              >
+                いいねした投稿
+              </button>
+            )}
           </div>
 
           {displayPosts.map((post) => (
@@ -151,11 +167,14 @@ export default function ProfileScreen({
               onOpen={() => onOpenPostDetail(post.id)}
               onLike={() => handleLike(post.id)}
               onOpenProfile={onOpenProfile}
+              onDelete={handleDeletePost}
+              currentUserId={currentUserId}
+              isAdmin={isUserAdmin}
             />
           ))}
           {displayPosts.length === 0 && (
             <div className="text-xs text-brandMuted text-center py-4">
-              {activeTab === "posts" ? "まだ投稿がありません。" : "まだ「いいね」した投稿がありません。"}
+              {activeTab === "posts" ? (isMe ? "まだ投稿がありません。" : "公開中の投稿がありません。") : "まだ「いいね」した投稿がありません。"}
             </div>
           )}
         </div>

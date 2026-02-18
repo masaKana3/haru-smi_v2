@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import CommentCard from "../components/CommentCard";
-import { Post, Comment } from "../types/community";
+import { CommunityPost, Comment } from "../types/community";
 import { useStorage } from "../hooks/useStorage";
 import { toRelativeTime } from "../utils/dateUtils";
 
@@ -10,13 +10,15 @@ type Props = {
   onEdit: () => void;
   onDeleted: () => void;
   currentUserId: string;
+  onOpenProfile: (userId: string) => void;
 };
 
-export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, currentUserId }: Props) {
+export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, currentUserId, onOpenProfile }: Props) {
   const storage = useStorage();
-  const [post, setPost] = useState<Post | null>(null);
+  const [post, setPost] = useState<CommunityPost | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [comment, setComment] = useState("");
+  const [likes, setLikes] = useState({ count: 0, userHasLiked: false });
   const [likedComments, setLikedComments] = useState<Record<string, boolean>>({});
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -26,6 +28,8 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
     if (postData) {
       const commentsData = await storage.loadCommentsByPostId(postId);
       setComments(commentsData);
+      const likesData = await storage.getPostLikes(postId);
+      setLikes(likesData);
     }
   }, [postId, storage]);
 
@@ -43,7 +47,7 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
           >
             ← コミュニティ
           </button>
-          <div className="text-sm text-brandMuted">投稿が見つかりませんでした。</div>
+          <div className="text-sm text-brandMuted">投稿の読み込み中か、見つかりませんでした。</div>
         </div>
       </div>
     );
@@ -52,38 +56,46 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
   const handleAddComment = async () => {
     const text = comment.trim();
     if (!text) return;
-    await storage.saveComment({
+    const newComment = await storage.saveComment({
       postId,
       text,
       authorId: currentUserId,
     });
+    if (newComment) {
+        setComments(prev => [...prev, newComment]);
+    }
     setComment("");
-    load();
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   const handleLikePost = async () => {
-    await storage.likePost(post.id, currentUserId);
-    load();
+    // Optimistic update
+    setLikes(prev => ({
+        count: prev.userHasLiked ? prev.count - 1 : prev.count + 1,
+        userHasLiked: !prev.userHasLiked,
+    }));
+    await storage.togglePostLike(post.id);
   };
 
   const handleLikeComment = async (id: string) => {
     await storage.likeComment(id);
     setLikedComments((prev) => ({ ...prev, [id]: true }));
-    load();
+    // load(); // Placeholder, no data change expected
   };
 
   const handleDeletePost = async () => {
     if (window.confirm("この投稿を削除しますか？")) {
-      await storage.deletePost(postId);
-      onDeleted();
+      const success = await storage.deletePost(postId);
+      if (success) {
+        onDeleted();
+      }
     }
   };
 
   const handleDeleteComment = async (commentId: string) => {
     if (window.confirm("コメントを削除しますか？")) {
       await storage.deleteComment(commentId);
-      load();
+      setComments(prev => prev.filter(c => c.id !== commentId));
     }
   };
 
@@ -111,7 +123,7 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
     }
   };
 
-  const isAuthor = post.authorId === currentUserId;
+  const isAuthor = post.user_id === currentUserId;
 
   return (
     <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
@@ -146,7 +158,7 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
           <div className="flex items-center justify-between text-xs text-brandMuted">
             <span>{post.type === "diary" ? "日記" : "テーマ投稿"}</span>
             <span className="px-2 py-[2px] bg-brandAccentAlt/20 rounded-full text-[11px]">
-              {post.visibility === "public" ? "公開" : "非公開"}
+              {post.is_public ? "公開" : "非公開"}
             </span>
           </div>
           <div className="text-base font-semibold text-brandText">
@@ -156,12 +168,12 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
             {post.content}
           </div>
           <div className="flex items-center justify-between text-xs text-brandMuted">
-            <span>{toRelativeTime(post.createdAt)}</span>
+            <span>{toRelativeTime(post.created_at)}</span>
             <button
               onClick={handleLikePost}
-              className="text-xs text-brandAccent hover:opacity-80 transition-opacity"
+              className={`text-xs hover:opacity-80 transition-opacity ${likes.userHasLiked ? 'text-brandAccent font-bold' : 'text-brandMuted'}`}
             >
-              👍 {post.likes}
+              ❤️ {likes.count}
             </button>
           </div>
         </div>
@@ -191,9 +203,11 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
                 key={cmt.id}
                 comment={cmt}
                 onLike={() => handleLikeComment(cmt.id)}
-                onDelete={cmt.authorId === currentUserId ? () => handleDeleteComment(cmt.id) : undefined}
-                onReport={cmt.authorId !== currentUserId ? () => handleReportComment(cmt.id) : undefined}
+                onDelete={cmt.user_id === currentUserId ? () => handleDeleteComment(cmt.id) : undefined}
+                onReport={cmt.user_id !== currentUserId ? () => handleReportComment(cmt.id) : undefined}
                 liked={likedComments[cmt.id]}
+                onOpenProfile={onOpenProfile}
+                currentUserId={currentUserId}
               />
             ))}
             {comments.length === 0 && (

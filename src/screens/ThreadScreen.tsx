@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import PostCard from "../components/PostCard";
-import { getTopics } from "../logic/communityLogic";
-import { Post, Topic } from "../types/community";
+import { CommunityPost, CommunityTopic } from "../types/community";
 import { useStorage } from "../hooks/useStorage";
 
 type Props = {
@@ -9,6 +8,7 @@ type Props = {
   onBack: () => void;
   onCreatePost: (topicId: string) => void;
   onOpenPostDetail: (postId: string) => void;
+  onOpenProfile: (userId: string) => void; // onOpenProfileをpropsに追加
   currentUserId: string;
 };
 
@@ -17,26 +17,55 @@ export default function ThreadScreen({
   onBack,
   onCreatePost,
   onOpenPostDetail,
+  onOpenProfile, // propsから受け取る
   currentUserId,
 }: Props) {
   const storage = useStorage();
-  const topics = useMemo(() => getTopics(), []);
-  const topic = topics.find((t) => t.id === topicId);
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [topic, setTopic] = useState<CommunityTopic | null>(null);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isUserAdmin, setIsUserAdmin] = useState(false);
 
-  const loadPosts = async () => {
-    const data = await storage.listPosts({ topicId });
-    setPosts(data);
-  };
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    // Fetch admin status, topic details and posts
+    const [isAdminStatus, allTopics, postData] = await Promise.all([
+      storage.isAdmin(),
+      storage.listCommunityTopics(),
+      storage.listCommunityPosts(topicId),
+    ]);
+    
+    setIsUserAdmin(isAdminStatus);
+    const currentTopic = allTopics.find(t => t.id === topicId);
+    setTopic(currentTopic || null);
+    setPosts(postData);
+    setLoading(false);
+  }, [storage, topicId]);
 
   useEffect(() => {
-    loadPosts();
-  }, [topicId]);
+    loadData();
+  }, [loadData]);
 
   const handleLike = async (postId: string) => {
-    await storage.likePost(postId, currentUserId);
-    loadPosts();
+    console.log("Like functionality is not yet implemented for postId:", postId);
   };
+
+  const handleDeletePost = async (postId: string) => {
+    const success = await storage.deletePost(postId);
+    if (success) {
+      loadData();
+    }
+  };
+
+  if (loading) {
+    return (
+       <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
+        <div className="w-full max-w-sm pt-20 text-center">
+          <p>読み込み中...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!topic) {
     return (
@@ -69,8 +98,8 @@ export default function ThreadScreen({
         </div>
 
         <div className="bg-white rounded-card p-4 shadow-sm space-y-2">
-          <div className="text-sm font-semibold">テーマ概要</div>
-          <div className="text-xs text-brandMuted leading-relaxed">{topic.description}</div>
+          <div className="text-sm font-semibold">テーマ</div>
+          <div className="text-xs text-brandMuted leading-relaxed">{topic.title}</div>
           <button
             className="text-xs text-brandAccent underline"
             onClick={() => onCreatePost(topic.id)}
@@ -87,10 +116,14 @@ export default function ThreadScreen({
               topic={topic}
               onOpen={() => onOpenPostDetail(post.id)}
               onLike={() => handleLike(post.id)}
+              onOpenProfile={onOpenProfile}
+              onDelete={handleDeletePost}
+              currentUserId={currentUserId}
+              isAdmin={isUserAdmin}
             />
           ))}
           {posts.length === 0 && (
-            <div className="text-xs text-brandMuted">まだ投稿がありません。</div>
+            <div className="text-xs text-brandMuted p-4 text-center">まだ投稿がありません。</div>
           )}
         </div>
       </div>

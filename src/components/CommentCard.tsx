@@ -1,76 +1,88 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Comment } from "../types/community";
 import { toRelativeTime } from "../utils/dateUtils";
-import { useStorage } from "../hooks/useStorage";
 
 type Props = {
-  comment: Comment;
+  comment: Comment & { content?: string };
   onLike?: () => void;
-  onOpenProfile?: (userId: string) => void;
   onDelete?: () => void;
   onReport?: () => void;
+  onOpenProfile?: (userId: string) => void;
   liked?: boolean;
+  currentUserId?: string;
 };
 
 export default function CommentCard({
   comment,
   onLike,
-  onOpenProfile,
   onDelete,
   onReport,
+  onOpenProfile,
   liked,
+  currentUserId,
 }: Props) {
-  const storage = useStorage();
-  const [authorName, setAuthorName] = useState("ユーザー");
+  const author = comment.profiles;
+  const authorName = author?.nickname || "ユーザー";
+  const isOwnComment = comment.user_id === currentUserId;
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadAuthor = async () => {
-      const profile = await storage.getUserProfile(comment.authorId);
-      if (isMounted && profile?.nickname) {
-        setAuthorName(profile.nickname);
-      }
-    };
-    loadAuthor();
-    return () => { isMounted = false; };
-  }, [storage, comment.authorId]);
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onOpenProfile && comment.user_id && !isOwnComment) {
+      onOpenProfile(comment.user_id);
+    }
+  };
 
   return (
-    <div className="w-full bg-brandBg rounded-card px-3 py-2 space-y-1">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenProfile?.(comment.authorId);
-          }}
-          className="text-sm font-semibold text-brandText hover:underline"
-        >
-          {authorName}
-        </button>
-        <div className="flex items-center gap-2">
-          {onDelete && (
-            <button onClick={onDelete} className="text-xs text-red-500 underline">
-              削除
-            </button>
-          )}
-          {onReport && (
-            <button onClick={onReport} className="text-xs text-brandMuted underline">
-              通報
-            </button>
-          )}
+    <div className="w-full bg-brandPanel rounded-card px-3 py-3 space-y-2 flex gap-3">
+      {/* Avatar */}
+      <div
+        onClick={handleProfileClick}
+        className={`w-9 h-9 rounded-full bg-brandAccentAlt/30 flex items-center justify-center overflow-hidden flex-shrink-0 text-lg ${!isOwnComment ? 'cursor-pointer hover:opacity-80' : ''} transition-opacity`}
+      >
+        {author?.avatarUrl ? (
+          <img
+            src={author.avatarUrl}
+            alt={authorName}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          "👤"
+        )}
+      </div>
+
+      <div className="flex-grow">
+        <div className="flex items-center justify-between">
+          <span
+            onClick={handleProfileClick}
+            className={`text-sm font-semibold text-brandText ${!isOwnComment ? 'cursor-pointer hover:underline' : ''}`}
+          >
+            {isOwnComment ? "あなた" : authorName}
+          </span>
+          <div className="flex items-center gap-2">
+            {onDelete && (
+              <button onClick={onDelete} className="text-xs text-red-500 underline">
+                削除
+              </button>
+            )}
+            {onReport && !isOwnComment && (
+              <button onClick={onReport} className="text-xs text-brandMuted underline">
+                通報
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-      <div className="text-sm text-brandText whitespace-pre-line leading-relaxed">
-        {comment.text}
-      </div>
-      <div className="flex items-center justify-between text-xs text-brandMuted">
-        <span>{toRelativeTime(comment.createdAt)}</span>
-        <button
-          onClick={onLike}
-          className="text-xs text-brandAccent hover:opacity-80 transition-opacity"
-        >
-          👍 {comment.likes} {liked ? "★" : ""}
-        </button>
+        <div className="text-sm text-brandText whitespace-pre-line leading-relaxed pt-1">
+          {comment.content || comment.text}
+        </div>
+        <div className="flex items-center justify-between text-xs text-brandMuted pt-1">
+          <span>{toRelativeTime(comment.created_at)}</span>
+          <button
+            onClick={onLike}
+            className={`text-xs hover:opacity-80 transition-opacity ${liked ? 'text-brandAccent font-bold' : 'text-brandMuted'}`}
+          >
+            ❤️ {comment.likes || 0}
+          </button>
+        </div>
       </div>
     </div>
   );

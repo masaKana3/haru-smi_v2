@@ -1,14 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PostCard from "../components/PostCard";
-import { Post, Visibility } from "../types/community";
+import { CommunityPost } from "../types/community";
 import { useStorage } from "../hooks/useStorage";
 
+type Visibility = "public" | "private";
 type VisibilityFilter = "all" | Visibility;
+
 type Props = {
   onBack: () => void;
   onOpenPostDetail: (postId: string) => void;
   onCreateDiary: () => void;
   currentUserId: string;
+  onOpenProfile: (userId: string) => void;
 };
 
 export default function DiaryScreen({
@@ -16,18 +19,18 @@ export default function DiaryScreen({
   onOpenPostDetail,
   onCreateDiary,
   currentUserId,
+  onOpenProfile,
 }: Props) {
   const storage = useStorage();
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("all");
+  const [isUserAdmin, setIsUserAdmin] = useState(false);
 
   const loadPosts = async () => {
-    const data = await storage.listPosts({
-      authorId: currentUserId,
-      type: "diary",
-    });
+    const data = await storage.loadDiaryPosts(currentUserId);
     setPosts(data);
+    storage.isAdmin().then(setIsUserAdmin);
   };
 
   useEffect(() => {
@@ -35,15 +38,23 @@ export default function DiaryScreen({
   }, [currentUserId]);
 
   const handleLike = async (postId: string) => {
-    await storage.likePost(postId, currentUserId);
-    loadPosts();
+    console.log(`Like functionality not implemented for post ${postId}`);
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    const success = await storage.deletePost(postId);
+    if (success) {
+      loadPosts();
+    }
   };
 
   const filteredPosts = useMemo(() => {
     return posts
       .filter((post) => {
         if (visibilityFilter === "all") return true;
-        return post.visibility === visibilityFilter;
+        if (visibilityFilter === "public") return post.is_public !== false; // true or undefined
+        if (visibilityFilter === "private") return post.is_public === false && post.user_id === currentUserId;
+        return false;
       })
       .filter((post) => {
         if (!searchTerm.trim()) return true;
@@ -53,12 +64,12 @@ export default function DiaryScreen({
           post.content.toLowerCase().includes(lowercasedTerm)
         );
       });
-  }, [posts, searchTerm, visibilityFilter]);
+  }, [posts, searchTerm, visibilityFilter, currentUserId]);
 
   const filterOptions: { label: string; value: VisibilityFilter }[] = [
     { label: "すべて", value: "all" },
     { label: "公開のみ", value: "public" },
-    { label: "非公開のみ", value: "private" },
+    { label: "自分の非公開", value: "private" },
   ];
 
   return (
@@ -71,7 +82,7 @@ export default function DiaryScreen({
           >
             ← コミュニティ
           </button>
-          <div className="text-md font-semibold">マイ日記</div>
+          <div className="text-md font-semibold">日記</div>
           <div className="w-10" />
         </div>
 
@@ -118,6 +129,10 @@ export default function DiaryScreen({
               post={post}
               onOpen={() => onOpenPostDetail(post.id)}
               onLike={() => handleLike(post.id)}
+              onOpenProfile={onOpenProfile}
+              onDelete={handleDeletePost}
+              currentUserId={currentUserId}
+              isAdmin={isUserAdmin}
             />
           ))}
           {filteredPosts.length === 0 && (

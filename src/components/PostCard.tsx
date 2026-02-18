@@ -1,14 +1,15 @@
 import React from "react";
-import { Post, Topic } from "../types/community";
-import { UserProfile } from "../types/user";
+import { CommunityPost, CommunityTopic } from "../types/community";
 
 type Props = {
-  post: Post;
-  topic?: Topic;
+  post: CommunityPost;
+  topic?: CommunityTopic;
   onOpen: () => void;
   onLike: () => void;
-  authorProfile?: UserProfile;
   onOpenProfile?: (userId: string) => void;
+  onDelete?: (postId: string) => void;
+  currentUserId?: string;
+  isAdmin?: boolean;
 };
 
 export default function PostCard({
@@ -16,23 +17,33 @@ export default function PostCard({
   topic,
   onOpen,
   onLike,
-  authorProfile,
   onOpenProfile,
+  onDelete,
+  currentUserId,
+  isAdmin,
 }: Props) {
-  const dateLabel = new Date(post.createdAt).toLocaleString("ja-JP", {
+  const dateLabel = new Date(post.created_at).toLocaleString("ja-JP", {
     month: "numeric",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
 
-  // ニックネームのフォールバック: プロフィール名 -> "ユーザー"
-  const displayName = authorProfile?.nickname || "ユーザー";
+  const author = post.profiles;
+  const displayName = author?.nickname || "ユーザー";
+  const isAuthor = post.user_id === currentUserId;
 
   const handleProfileClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onOpenProfile) {
-      onOpenProfile(post.authorId);
+    if (onOpenProfile && post.user_id) {
+      onOpenProfile(post.user_id);
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete && window.confirm("この投稿を本当に削除しますか？")) {
+      onDelete(post.id);
     }
   };
 
@@ -48,9 +59,9 @@ export default function PostCard({
             onClick={handleProfileClick}
             className="w-10 h-10 rounded-full bg-brandAccentAlt/30 flex items-center justify-center overflow-hidden flex-shrink-0 text-lg cursor-pointer hover:opacity-80 transition-opacity"
           >
-            {authorProfile?.avatarUrl ? (
+            {author?.avatarUrl ? (
               <img
-                src={authorProfile.avatarUrl}
+                src={author.avatarUrl}
                 alt={displayName}
                 className="w-full h-full object-cover"
               />
@@ -76,23 +87,15 @@ export default function PostCard({
             <div className="text-xs text-brandMuted">{dateLabel}</div>
           </div>
         </div>
+        {(isAuthor || isAdmin) && onDelete && (
+          <button onClick={handleDelete} className="text-red-500 hover:text-red-700 text-xs p-1">
+            🗑️
+          </button>
+        )}
       </div>
 
       <div className="text-sm text-brandText whitespace-pre-wrap line-clamp-3">
         {post.content}
-      </div>
-
-      <div className="flex items-center justify-end gap-4 pt-2">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onLike();
-          }}
-          className="flex items-center gap-1 text-xs text-brandAccent hover:opacity-80 transition-opacity"
-        >
-          <span>❤️</span>
-          <span>{post.likes}</span>
-        </button>
       </div>
     </div>
   );
