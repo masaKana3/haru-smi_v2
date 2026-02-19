@@ -45,7 +45,7 @@ function normalizeSymptoms(symptoms: DailyAnswers): NormalizedSymptoms {
   };
 }
 
-export function generateNurseAdvice(
+export function generateHaruAdvice(
   weatherData: WeatherData,
   symptoms: DailyAnswers
 ): string {

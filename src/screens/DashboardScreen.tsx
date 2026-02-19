@@ -8,7 +8,7 @@ import { buildCalendarEntries } from "../utils/calendarEntries";
 import WeatherCard from "../components/weather/WeatherCard";
 import CommunityPreviewCard from "../components/community/CommunityPreviewCard";
 import { fetchWeather, WeatherData, WeatherError } from "../api/weather";
-import { generateNurseAdvice } from "../logic/advice/nurseAdvice";
+import { generateHaruAdvice } from "../logic/advice/haruAdvice";
 import { useStorage } from "../hooks/useStorage";
 import { predictNextPeriod, PredictionResult, getCyclePhase, PhaseInfo } from "../logic/core/periodPrediction";
 
@@ -126,15 +126,15 @@ export default function DashboardScreen({
   const [weatherError, setWeatherError] = useState<WeatherError | null>(null);
   const [weatherLoading, setWeatherLoading] = useState<boolean>(false);
 
-  const nurseAdvice = useMemo(() => {
+  const haruAdvice = useMemo(() => {
     if (!todayDaily?.answers || !weatherData) return null;
-    return generateNurseAdvice(weatherData, todayDaily.answers);
+    return generateHaruAdvice(weatherData, todayDaily.answers);
   }, [todayDaily, weatherData]);
 
   const summaryAdvice = useMemo(() => {
     if (!hasTodayRecord) return null;
-    return buildSummaryText(nurseAdvice, advice);
-  }, [advice, nurseAdvice, hasTodayRecord]);
+    return buildSummaryText(haruAdvice, advice);
+  }, [advice, haruAdvice, hasTodayRecord]);
 
   const formatJPDate = (dateStr: string) => {
     const [y, m, d] = dateStr.split("-");

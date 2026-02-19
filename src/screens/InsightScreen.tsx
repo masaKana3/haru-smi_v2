@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { DailyRecord } from "../types/daily";
 import { PeriodRecord } from "../types/period";
-import { generateNurseAdvice } from "../logic/advice/nurseAdvice";
+import { generateHaruAdvice } from "../logic/advice/haruAdvice";
 import { getOrGenerateRecipe } from "../logic/advice/recipeSuggestion";
 import { fetchWeather, WeatherData, WeatherError } from "../api/weather";
 import { useStorage } from "../hooks/useStorage";
@@ -70,9 +70,9 @@ export default function InsightScreen({ todayDaily, onBack, latestPeriod, allDai
     };
   }, []);
 
-  const nurseAdvice = useMemo(() => {
+  const haruAdvice = useMemo(() => {
     if (!todayDaily?.answers || !weatherData) return null;
-    return generateNurseAdvice(weatherData, todayDaily.answers);
+    return generateHaruAdvice(weatherData, todayDaily.answers);
   }, [todayDaily, weatherData]);
 
   // -------------------------
@@ -195,7 +195,7 @@ export default function InsightScreen({ todayDaily, onBack, latestPeriod, allDai
               smiHistory={smiHistory}
               chartData={chartData}
               periodRanges={periodRanges}
-              nurseAdvice={nurseAdvice}
+              haruAdvice={haruAdvice}
               weatherData={weatherData}
               weatherError={weatherError}
               weatherLoading={weatherLoading}

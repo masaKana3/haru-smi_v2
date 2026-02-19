@@ -23,7 +23,7 @@ type Props = {
   smiHistory: SMIRecord[];
   chartData: InsightChartData[];
   periodRanges: { start: string; end: string }[];
-  nurseAdvice: string | null;
+  haruAdvice: string | null;
   weatherData: WeatherData | null;
   weatherError: WeatherError | null;
   weatherLoading: boolean;
@@ -58,7 +58,7 @@ export default function DailyReport({
   smiHistory,
   chartData,
   periodRanges,
-  nurseAdvice,
+  haruAdvice,
   weatherData,
   weatherError,
   weatherLoading,
@@ -122,11 +122,11 @@ export default function DailyReport({
         </div>
       </div>
 
-      {nurseAdvice && (
+      {haruAdvice && (
         <div className="space-y-2">
-          <div className="text-sm font-semibold text-brandText">🩺 ナースのやさしいひとこと</div>
+          <div className="text-sm font-semibold text-brandText">🌸 はるちゃんのアドバイス</div>
           <p className="text-sm leading-relaxed whitespace-pre-line">
-            {nurseAdvice}
+            {haruAdvice}
           </p>
         </div>
       )}
