@@ -8,7 +8,6 @@ type Props = {
   onDelete?: () => void;
   onReport?: () => void;
   onOpenProfile?: (userId: string) => void;
-  liked?: boolean;
   currentUserId?: string;
 };
 
@@ -18,7 +17,6 @@ export default function CommentCard({
   onDelete,
   onReport,
   onOpenProfile,
-  liked,
   currentUserId,
 }: Props) {
   const author = comment.profiles;
@@ -78,9 +76,9 @@ export default function CommentCard({
           <span>{toRelativeTime(comment.created_at)}</span>
           <button
             onClick={onLike}
-            className={`text-xs hover:opacity-80 transition-opacity ${liked ? 'text-brandAccent font-bold' : 'text-brandMuted'}`}
+            className={`text-xs hover:opacity-80 transition-opacity ${comment.userHasLiked ? 'text-brandAccent font-bold' : 'text-brandMuted'}`}
           >
-            ❤️ {comment.likes || 0}
+            ❤️ {comment.likes_count || 0}
           </button>
         </div>
       </div>

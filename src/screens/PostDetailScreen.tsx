@@ -19,7 +19,6 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
   const [comments, setComments] = useState<Comment[]>([]);
   const [comment, setComment] = useState("");
   const [likes, setLikes] = useState({ count: 0, userHasLiked: false });
-  const [likedComments, setLikedComments] = useState<Record<string, boolean>>({});
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const load = useCallback(async () => {
@@ -78,9 +77,20 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
   };
 
   const handleLikeComment = async (id: string) => {
-    await storage.likeComment(id);
-    setLikedComments((prev) => ({ ...prev, [id]: true }));
-    // load(); // Placeholder, no data change expected
+    // Optimistic update
+    setComments(prevComments => 
+      prevComments.map(c => {
+        if (c.id === id) {
+          return {
+            ...c,
+            likes_count: c.userHasLiked ? (c.likes_count || 1) - 1 : (c.likes_count || 0) + 1,
+            userHasLiked: !c.userHasLiked,
+          };
+        }
+        return c;
+      })
+    );
+    await storage.toggleCommentLike(id);
   };
 
   const handleDeletePost = async () => {
@@ -205,7 +215,6 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
                 onLike={() => handleLikeComment(cmt.id)}
                 onDelete={cmt.user_id === currentUserId ? () => handleDeleteComment(cmt.id) : undefined}
                 onReport={cmt.user_id !== currentUserId ? () => handleReportComment(cmt.id) : undefined}
-                liked={likedComments[cmt.id]}
                 onOpenProfile={onOpenProfile}
                 currentUserId={currentUserId}
               />

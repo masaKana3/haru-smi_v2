@@ -31,7 +31,8 @@ export type Comment = {
   user_id: string;
   text: string;
   created_at: string;
-  likes?: number;
+  likes_count?: number;
+  userHasLiked?: boolean;
   // `profiles`テーブルからJOINで取得するユーザー情報
   profiles?: Pick<UserProfile, 'nickname' | 'avatarUrl'>;
 };

@@ -620,7 +620,9 @@ export function useStorage() {
 
   // コメントを読み込む
   const loadCommentsByPostId = useCallback(async (postId: string): Promise<Comment[]> => {
-    const { data, error } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data: comments, error } = await supabase
       .from('community_comments')
       .select('*, profiles!community_comments_user_id_fkey_new(*)')
       .eq('post_id', postId)
@@ -630,14 +632,43 @@ export function useStorage() {
       console.error('Error fetching comments:', error);
       return [];
     }
-    return (data || []).map(comment => {
+    if (!comments) {
+      return [];
+    }
+
+    const commentIds = comments.map(c => c.id);
+
+    const { data: allLikes, error: likesError } = await supabase
+      .from('community_comment_likes')
+      .select('comment_id, user_id')
+      .in('comment_id', commentIds);
+
+    if (likesError) {
+      console.error('Error fetching comment likes:', likesError);
+      // いいねがなくても処理を続行
+    }
+
+    const likesByCommentId = new Map<string, string[]>();
+    if (allLikes) {
+      for (const like of allLikes) {
+        if (!likesByCommentId.has(like.comment_id)) {
+          likesByCommentId.set(like.comment_id, []);
+        }
+        likesByCommentId.get(like.comment_id)!.push(like.user_id);
+      }
+    }
+
+    return comments.map(comment => {
       const profileData = Array.isArray(comment.profiles) ? comment.profiles[0] : comment.profiles;
+      const likes = likesByCommentId.get(comment.id) || [];
       return {
         ...comment,
         profiles: profileData ? {
           nickname: profileData.nickname,
           avatarUrl: profileData.avatar_url,
         } : undefined,
+        likes_count: likes.length,
+        userHasLiked: user ? likes.includes(user.id) : false,
       };
     });
   }, []);
@@ -668,10 +699,43 @@ export function useStorage() {
     };
   }, []);
 
-  // コメントにいいねする（未実装プレースホルダー）
-  const likeComment = useCallback(async (commentId: string) => {
-    console.log(`Liking comment ${commentId}. Functionality not implemented.`);
-    return Promise.resolve();
+  const toggleCommentLike = useCallback(async (commentId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert('ログインが必要です。');
+      return;
+    }
+
+    const { data: existingLike, error: fetchError } = await supabase
+      .from('community_comment_likes')
+      .select('id')
+      .eq('comment_id', commentId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('Error checking for existing comment like:', fetchError);
+      return;
+    }
+
+    if (existingLike) {
+      // Unlike
+      const { error: deleteError } = await supabase
+        .from('community_comment_likes')
+        .delete()
+        .eq('id', existingLike.id);
+      if (deleteError) {
+        console.error('Error unliking comment:', deleteError);
+      }
+    } else {
+      // Like
+      const { error: insertError } = await supabase
+        .from('community_comment_likes')
+        .insert({ comment_id: commentId, user_id: user.id });
+      if (insertError) {
+        console.error('Error liking comment:', insertError);
+      }
+    }
   }, []);
 
   // 投稿を削除する
@@ -871,7 +935,7 @@ export function useStorage() {
     getUserTotalLikes,
     loadCommentsByPostId,
     saveComment,
-    likeComment,
+    toggleCommentLike,
     deletePost,
     deleteComment,
     saveReport,
@@ -909,7 +973,7 @@ export function useStorage() {
     getUserTotalLikes,
     loadCommentsByPostId,
     saveComment,
-    likeComment,
+    toggleCommentLike,
     deletePost,
     deleteComment,
     saveReport,
