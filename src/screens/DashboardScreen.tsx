@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { DailyRecord } from "../types/daily";
 import { PeriodRecord } from "../types/period";
+import { CommunityTopic } from "../types/community";
 import { generateAdvice } from "../logic/adviceLogic";
 import Card from "../components/layout/Card";
 import CalendarGrid from "../components/calendar/CalendarGrid";
 import { buildCalendarEntries } from "../utils/calendarEntries";
 import WeatherCard from "../components/weather/WeatherCard";
 import CommunityPreviewCard from "../components/community/CommunityPreviewCard";
+import CommunityTopicItem from "../components/community/CommunityTopicItem";
 import { fetchWeather, WeatherData, WeatherError } from "../api/weather";
 import { generateHaruAdvice } from "../logic/advice/haruAdvice";
 import { useStorage } from "../hooks/useStorage";
@@ -47,6 +49,7 @@ type Props = {
   onOpenSMIHistory: () => void;
   onOpenInsight: () => void;
   onOpenCommunity: () => void;
+  onOpenThread: (topicId: string) => void;
   onOpenSettings: () => void;
   latestPeriod: PeriodRecord | null;
 };
@@ -87,6 +90,7 @@ export default function DashboardScreen({
   onOpenSMIHistory,
   onOpenInsight,
   onOpenCommunity,
+  onOpenThread,
   onOpenSettings,
   latestPeriod,
  }: Props) {
@@ -94,6 +98,7 @@ export default function DashboardScreen({
   const [username, setUsername] = useState("ユーザー");
   const [periodPrediction, setPeriodPrediction] = useState<PredictionResult | null>(null);
   const [currentPhase, setCurrentPhase] = useState<PhaseInfo | null>(null);
+  const [recentTopics, setRecentTopics] = useState<CommunityTopic[]>([]);
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const hasTodayRecord = Boolean(
@@ -181,7 +186,12 @@ export default function DashboardScreen({
         setUsername(profile.nickname);
       }
     };
+    const loadTopics = async () => {
+      const topics = await storage.loadRecentTopics();
+      setRecentTopics(topics);
+    };
     loadProfile();
+    loadTopics();
   }, [storage]);
 
   useEffect(() => {
@@ -357,7 +367,23 @@ export default function DashboardScreen({
           error={weatherError}
         />
 
-        <CommunityPreviewCard onOpen={onOpenCommunity} />
+        <CommunityPreviewCard onOpen={onOpenCommunity}>
+          {recentTopics.length > 0 ? (
+            <div className="space-y-2">
+              {recentTopics.map((topic) => (
+                <CommunityTopicItem
+                  key={topic.id}
+                  topic={topic}
+                  onClick={() => onOpenThread(topic.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-sm text-brandMuted py-4">
+              新しいお題はまだありません。
+            </div>
+          )}
+        </CommunityPreviewCard>
       </div>
     </div>
   );

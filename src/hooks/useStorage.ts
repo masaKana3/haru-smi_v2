@@ -252,6 +252,20 @@ export function useStorage() {
     return data || [];
   }, []);
 
+  // 直近のトピックを3件取得
+  const loadRecentTopics = useCallback(async (): Promise<CommunityTopic[]> => {
+    const { data, error } = await supabase
+      .from("community_topics")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(3);
+    if (error) {
+      console.error("Error fetching recent community topics:", error);
+      return [];
+    }
+    return data || [];
+  }, []);
+
   // 管理者がトピック（お題）を作成
   const createCommunityTopic = useCallback(async (title: string): Promise<CommunityTopic | null> => {
     const { data, error } = await supabase
@@ -921,6 +935,7 @@ export function useStorage() {
     savePeriods,
     getLatestPeriod,
     listCommunityTopics,
+    loadRecentTopics,
     createCommunityTopic,
     listCommunityPosts,
     loadCommunityPosts,
@@ -959,6 +974,7 @@ export function useStorage() {
     savePeriods,
     getLatestPeriod,
     listCommunityTopics,
+    loadRecentTopics,
     createCommunityTopic,
     listCommunityPosts,
     loadCommunityPosts,

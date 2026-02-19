@@ -80,6 +80,7 @@ export default function AppNavigator({
           onOpenSMIHistory={() => nav.navigate("smi_history")}
           onOpenInsight={() => nav.navigate("insight")}
           onOpenCommunity={() => nav.navigate("community")}
+          onOpenThread={communityNav.handleOpenThread}
           onOpenSettings={() => nav.navigate("settings")}
           latestPeriod={latestPeriod}
         />
