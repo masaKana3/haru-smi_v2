@@ -3,6 +3,7 @@ import { CommunityPost, CommunityTopic } from "../types/community";
 import { useStorage } from "../hooks/useStorage";
 import Card from "../components/layout/Card";
 import SectionTitle from "../components/layout/SectionTitle";
+import { ICONS, DEFAULT_ICON } from "../lib/constants";
 
 type Props = {
   onBack: () => void;
@@ -32,6 +33,14 @@ const PostItem: React.FC<{
       onDelete(post.id);
     }
   };
+
+  const getAvatarSrc = () => {
+    const avatarId = author?.avatarUrl;
+    if (avatarId && ICONS[avatarId]) {
+      return ICONS[avatarId];
+    }
+    return DEFAULT_ICON;
+  };
   
   const renderBadge = () => {
     const badges = [];
@@ -49,7 +58,7 @@ const PostItem: React.FC<{
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <img
-            src={author?.avatarUrl || `https://api.dicebear.com/8.x/pixel-art/svg?seed=${authorName}`}
+            src={getAvatarSrc()}
             alt={authorName}
             className="w-10 h-10 rounded-full bg-gray-200 cursor-pointer flex-shrink-0"
             onClick={(e) => { e.stopPropagation(); !isOwnPost && post.user_id && onOpenProfile(post.user_id); }}
