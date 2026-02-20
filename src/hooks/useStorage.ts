@@ -24,6 +24,13 @@ async function hashPassword(password: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+const cleanAvatarUrl = (avatarUrl: string | undefined | null): string | undefined => {
+  if (avatarUrl && avatarUrl.startsWith('http')) {
+    return 'azarashi';
+  }
+  return avatarUrl || undefined;
+};
+
 export function useStorage() {
   const isAdmin = useCallback(async (): Promise<boolean> => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -307,7 +314,7 @@ export function useStorage() {
         // rename avatar_url to avatarUrl to match UserProfile type
         profiles: profileData ? {
           nickname: profileData.nickname,
-          avatarUrl: profileData.avatar_url,
+          avatarUrl: cleanAvatarUrl(profileData.avatar_url),
         } : undefined,
       };
     });
@@ -361,7 +368,7 @@ export function useStorage() {
       ...data,
       profiles: profileData ? {
         nickname: profileData.nickname,
-        avatarUrl: profileData.avatar_url,
+        avatarUrl: cleanAvatarUrl(profileData.avatar_url),
       } : undefined,
     };
     return result;
@@ -390,7 +397,7 @@ export function useStorage() {
         ...post,
         profiles: profileData ? {
           nickname: profileData.nickname,
-          avatarUrl: profileData.avatar_url,
+          avatarUrl: cleanAvatarUrl(profileData.avatar_url),
         } : undefined,
         likes_count,
         comments_count,
@@ -417,7 +424,7 @@ export function useStorage() {
         ...post,
         profiles: profileData ? {
           nickname: profileData.nickname,
-          avatarUrl: profileData.avatar_url,
+          avatarUrl: cleanAvatarUrl(profileData.avatar_url),
         } : undefined,
       };
     });
@@ -444,7 +451,7 @@ export function useStorage() {
       ...post,
       profiles: profileData ? {
         nickname: profileData.nickname,
-        avatarUrl: profileData.avatar_url,
+        avatarUrl: cleanAvatarUrl(profileData.avatar_url),
       } : undefined,
     };
   }, []);
@@ -537,7 +544,7 @@ export function useStorage() {
         ...post,
         profiles: profileData ? {
           nickname: profileData.nickname,
-          avatarUrl: profileData.avatar_url,
+          avatarUrl: cleanAvatarUrl(profileData.avatar_url),
         } : undefined,
       };
     });
@@ -563,7 +570,7 @@ export function useStorage() {
         ...post,
         profiles: profileData ? {
           nickname: profileData.nickname,
-          avatarUrl: profileData.avatar_url,
+          avatarUrl: cleanAvatarUrl(profileData.avatar_url),
         } : undefined,
       };
     });
@@ -591,7 +598,7 @@ export function useStorage() {
         ...post,
         profiles: profileData ? {
           nickname: profileData.nickname,
-          avatarUrl: profileData.avatar_url,
+          avatarUrl: cleanAvatarUrl(profileData.avatar_url),
         } : undefined,
       };
     }).filter((p): p is CommunityPost => p !== null);
@@ -679,7 +686,7 @@ export function useStorage() {
         ...comment,
         profiles: profileData ? {
           nickname: profileData.nickname,
-          avatarUrl: profileData.avatar_url,
+          avatarUrl: cleanAvatarUrl(profileData.avatar_url),
         } : undefined,
         likes_count: likes.length,
         userHasLiked: user ? likes.includes(user.id) : false,
@@ -708,7 +715,7 @@ export function useStorage() {
       ...data,
       profiles: profileData ? {
         nickname: profileData.nickname,
-        avatarUrl: profileData.avatar_url,
+        avatarUrl: cleanAvatarUrl(profileData.avatar_url),
       } : undefined,
     };
   }, []);
@@ -845,7 +852,7 @@ export function useStorage() {
           return {
             nickname: row.nickname || "",
             bio: row.bio || "",
-            avatarUrl: row.avatar_url || undefined,
+            avatarUrl: cleanAvatarUrl(row.avatar_url),
           } as UserProfile;
         }
       }
@@ -860,7 +867,7 @@ export function useStorage() {
           return {
             nickname: localProfile.nickname || "",
             bio: localProfile.bio || "",
-            avatarUrl: localProfile.avatarUrl || localProfile.avatar_url || undefined,
+            avatarUrl: cleanAvatarUrl(localProfile.avatarUrl || localProfile.avatar_url),
           } as UserProfile;
         } catch {
           return null;
