@@ -4,6 +4,7 @@ import { CommunityPost } from "../types/community";
 import { useStorage } from "../hooks/useStorage";
 import { UserProfile } from "../types/user";
 import { useSupabaseAuth } from "../hooks/useSupabaseAuth";
+import { ICONS, DEFAULT_ICON } from "../lib/constants";
 
 type Props = {
   onBack: () => void;
@@ -78,6 +79,14 @@ export default function ProfileScreen({
     }
   };
 
+  const getAvatarSrc = () => {
+    const avatarId = profile?.avatarUrl;
+    if (avatarId && ICONS[avatarId]) {
+      return ICONS[avatarId];
+    }
+    return DEFAULT_ICON;
+  };
+
   const displayPosts = activeTab === "posts" ? myPosts : likedPosts;
 
   return (
@@ -96,15 +105,11 @@ export default function ProfileScreen({
 
         <div className="bg-white rounded-card p-6 shadow-sm text-center space-y-2">
           <div className="w-20 h-20 bg-brandAccentAlt/30 rounded-full mx-auto flex items-center justify-center text-2xl overflow-hidden">
-            {profile?.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt="Avatar"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              "👤"
-            )}
+            <img
+              src={getAvatarSrc()}
+              alt="Avatar"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="font-semibold text-lg">
             {profile?.nickname || "ユーザー"}

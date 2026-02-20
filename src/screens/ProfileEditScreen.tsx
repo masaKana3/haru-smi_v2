@@ -1,14 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useStorage } from "../hooks/useStorage";
-
-const PRESET_AVATARS = [
-  { label: "アザラシ", url: "http://flat-icon-design.com/f/f_object_174/s256_f_object_174_0bg.png" },
-  { label: "パンダ", url: "http://flat-icon-design.com/f/f_object_100/s256_f_object_100_0bg.png" },
-  { label: "ペンギン", url: "http://flat-icon-design.com/f/f_object_108/s256_f_object_108_0bg.png" },
-  { label: "たぬき", url: "http://flat-icon-design.com/f/f_object_149/s256_f_object_149_0bg.png" },
-  { label: "ねこ", url: "http://flat-icon-design.com/f/f_object_111/s256_f_object_111_0bg.png" },
-  { label: "いぬ", url: "http://flat-icon-design.com/f/f_object_112/s256_f_object_112_0bg.png" },
-];
+import { ICONS } from "../lib/constants";
 
 type Props = {
   onBack: () => void;
@@ -19,7 +11,7 @@ export default function ProfileEditScreen({ onBack, onSaved }: Props) {
   const storage = useStorage();
   const [nickname, setNickname] = useState("");
   const [bio, setBio] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
+  const [iconId, setIconId] = useState("azarashi"); // Default icon
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,7 +20,10 @@ export default function ProfileEditScreen({ onBack, onSaved }: Props) {
       if (profile) {
         setNickname(profile.nickname);
         setBio(profile.bio);
-        setAvatarUrl(profile.avatarUrl || "");
+        // If avatarUrl is not a URL, it's an icon ID
+        if (profile.avatarUrl && !profile.avatarUrl.startsWith('http')) {
+          setIconId(profile.avatarUrl);
+        }
       }
       setLoading(false);
     };
@@ -43,7 +38,7 @@ export default function ProfileEditScreen({ onBack, onSaved }: Props) {
     await storage.saveProfile({
       nickname: nickname.trim(),
       bio: bio.trim(),
-      avatarUrl: avatarUrl.trim(),
+      avatarUrl: iconId, // Save the iconId as avatarUrl
     });
     onSaved();
   };
@@ -82,38 +77,28 @@ export default function ProfileEditScreen({ onBack, onSaved }: Props) {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold">おすすめアイコン</label>
-            <div className="flex items-center gap-3 pt-1">
-              {PRESET_AVATARS.map((avatar) => (
+            <label className="text-sm font-semibold">アイコンを選択</label>
+            <div className="flex items-center gap-3 pt-1 flex-wrap">
+              {Object.entries(ICONS).map(([id, src]) => (
                 <button
-                  key={avatar.label}
+                  key={id}
                   type="button"
-                  onClick={() => setAvatarUrl(avatar.url)}
+                  onClick={() => setIconId(id)}
                   className={`w-12 h-12 rounded-full overflow-hidden focus:outline-none transition-all duration-200 ease-in-out ${
-                    avatarUrl === avatar.url
+                    iconId === id
                       ? "ring-2 ring-brandAccent ring-offset-2 ring-offset-white"
                       : "hover:opacity-80"
                   }`}
-                  aria-label={`アバターを${avatar.label}に設定`}
+                  aria-label={`アイコンを${id}に設定`}
                 >
                   <img
-                    src={avatar.url}
-                    alt={avatar.label}
+                    src={src as string}
+                    alt={id}
                     className="w-full h-full object-cover"
                   />
                 </button>
               ))}
             </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-semibold">アバター画像URL</label>
-            <input
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              className="w-full border border-brandAccentAlt rounded-card px-3 py-2 text-sm"
-              placeholder="画像のURL（https://...）をここに貼り付けてください"
-            />
           </div>
 
           <div className="space-y-1">

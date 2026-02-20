@@ -1,5 +1,6 @@
 import React from "react";
 import { CommunityPost, CommunityTopic } from "../types/community";
+import { ICONS, DEFAULT_ICON } from "../lib/constants";
 
 type Props = {
   post: CommunityPost;
@@ -46,6 +47,14 @@ export default function PostCard({
       onDelete(post.id);
     }
   };
+  
+  const getAvatarSrc = () => {
+    const avatarId = author?.avatarUrl;
+    if (avatarId && ICONS[avatarId]) {
+      return ICONS[avatarId];
+    }
+    return DEFAULT_ICON;
+  };
 
   return (
     <div
@@ -59,15 +68,11 @@ export default function PostCard({
             onClick={handleProfileClick}
             className="w-10 h-10 rounded-full bg-brandAccentAlt/30 flex items-center justify-center overflow-hidden flex-shrink-0 text-lg cursor-pointer hover:opacity-80 transition-opacity"
           >
-            {author?.avatarUrl ? (
-              <img
-                src={author.avatarUrl}
-                alt={displayName}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              "👤"
-            )}
+            <img
+              src={getAvatarSrc()}
+              alt={displayName}
+              className="w-full h-full object-cover"
+            />
           </div>
 
           <div>

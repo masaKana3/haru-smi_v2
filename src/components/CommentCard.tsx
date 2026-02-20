@@ -1,6 +1,7 @@
 import React from "react";
 import { Comment } from "../types/community";
 import { toRelativeTime } from "../utils/dateUtils";
+import { ICONS, DEFAULT_ICON } from "../lib/constants";
 
 type Props = {
   comment: Comment & { content?: string };
@@ -30,6 +31,14 @@ export default function CommentCard({
     }
   };
 
+  const getAvatarSrc = () => {
+    const avatarId = author?.avatarUrl;
+    if (avatarId && ICONS[avatarId]) {
+      return ICONS[avatarId];
+    }
+    return DEFAULT_ICON;
+  };
+
   return (
     <div className="w-full bg-brandPanel rounded-card px-3 py-3 space-y-2 flex gap-3">
       {/* Avatar */}
@@ -37,15 +46,11 @@ export default function CommentCard({
         onClick={handleProfileClick}
         className={`w-9 h-9 rounded-full bg-brandAccentAlt/30 flex items-center justify-center overflow-hidden flex-shrink-0 text-lg ${!isOwnComment ? 'cursor-pointer hover:opacity-80' : ''} transition-opacity`}
       >
-        {author?.avatarUrl ? (
-          <img
-            src={author.avatarUrl}
-            alt={authorName}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          "👤"
-        )}
+        <img
+          src={getAvatarSrc()}
+          alt={authorName}
+          className="w-full h-full object-cover"
+        />
       </div>
 
       <div className="flex-grow">
