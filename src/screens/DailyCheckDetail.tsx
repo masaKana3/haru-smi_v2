@@ -109,7 +109,7 @@ export default function DailyCheckDetail({
 
           <button
             onClick={onBack}
-            className="mt-6 w-full py-3 bg-brandAccent text-white rounded-button"
+            className="mt-6 w-full py-3 bg-brandAccent text-white rounded-button hover:bg-brandAccentHover transition-colors"
           >
             戻る
           </button>
@@ -470,7 +470,7 @@ export default function DailyCheckDetail({
             onSave(recordToSave);
             alert("記録を保存しました！");
           }}
-          className="mt-6 w-full py-3 bg-brandAccent text-white rounded-button"
+          className="mt-6 w-full py-3 bg-brandAccent text-white rounded-button hover:bg-brandAccentHover transition-colors"
         >
           保存する
         </button>

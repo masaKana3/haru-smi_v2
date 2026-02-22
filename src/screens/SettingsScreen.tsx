@@ -126,7 +126,7 @@ export default function SettingsScreen({ onBack, onLogout, onOpenProfile }: Prop
             </p>
             <button
               onClick={handleExport}
-              className="w-full py-3 bg-brandAccent text-white rounded-button text-sm"
+              className="w-full py-3 bg-brandAccent text-white rounded-button text-sm hover:bg-brandAccentHover transition-colors"
             >
               データを書き出す（エクスポート）
             </button>

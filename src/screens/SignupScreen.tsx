@@ -69,7 +69,7 @@ export default function SignupScreen({ onSuccess, onCancel }: Props) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-[#FBCFE8] hover:bg-[#F9A8D4] text-white rounded-button font-medium disabled:opacity-50"
+            className="w-full py-3 bg-brandAccent hover:bg-brandAccentHover text-white rounded-button font-medium disabled:opacity-50 transition-colors"
           >
             {loading ? "処理中..." : "登録する"}
           </button>

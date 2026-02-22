@@ -113,7 +113,7 @@ export default function ProfileEditScreen({ onBack, onSaved }: Props) {
 
           <button
             onClick={handleSave}
-            className="w-full py-3 bg-brandAccent text-white rounded-button text-sm mt-4"
+            className="w-full py-3 bg-brandAccent text-white rounded-button text-sm mt-4 hover:bg-brandAccentHover transition-colors"
           >
             保存する
           </button>

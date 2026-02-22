@@ -47,7 +47,7 @@ export default function ResultScreen({ total, onGoDashboard }: ResultScreenProps
 
         <button
           onClick={onGoDashboard}
-          className="w-full py-3 bg-brandAccent text-white rounded-button"
+          className="w-full py-3 bg-brandAccent text-white rounded-button hover:bg-brandAccentHover transition-colors"
         >
           ダッシュボードへ
         </button>

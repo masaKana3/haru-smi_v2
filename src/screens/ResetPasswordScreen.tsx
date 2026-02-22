@@ -79,7 +79,7 @@ export default function ResetPasswordScreen({ email, onSuccess, onCancel }: Prop
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full py-3 bg-brandAccent text-white rounded-button text-sm disabled:opacity-50"
+            className="w-full py-3 bg-brandAccent text-white rounded-button text-sm disabled:opacity-50 hover:bg-brandAccentHover transition-colors"
           >
             {loading ? "設定中..." : "パスワードを変更する"}
           </button>

@@ -208,7 +208,7 @@ export default function CommunityScreen({
                 placeholder="新しいお題のタイトル"
                 className="flex-grow p-2 rounded-md text-sm bg-brandInput border-none"
               />
-              <button type="submit" className="px-4 py-2 bg-[#FBCFE8] text-white rounded-button text-sm font-semibold hover:bg-[#F9A8D4]">
+              <button type="submit" className="px-4 py-2 bg-brandAccent text-white rounded-button text-sm font-semibold hover:bg-brandAccentHover transition-colors">
                 作成
               </button>
             </form>

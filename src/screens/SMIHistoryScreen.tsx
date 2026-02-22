@@ -82,7 +82,7 @@ export default function SMIHistoryScreen({ onBack, onStartMeasure }: Props) {
 
           <button
             onClick={onStartMeasure}
-            className="w-full py-3 bg-brandAccent text-white rounded-button text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity"
+            className="w-full py-3 bg-brandAccent text-white rounded-button text-sm font-semibold shadow-sm hover:bg-brandAccentHover transition-colors"
           >
             新しく計測する
           </button>
@@ -117,9 +117,9 @@ export default function SMIHistoryScreen({ onBack, onStartMeasure }: Props) {
                   <Line
                     type="monotone"
                     dataKey="total"
-                    stroke="#F472B6"
+                    stroke="#E91E63"
                     strokeWidth={3}
-                    dot={{ fill: '#F472B6', r: 4, strokeWidth: 2, stroke: '#fff' }}
+                    dot={{ fill: '#E91E63', r: 4, strokeWidth: 2, stroke: '#fff' }}
                     activeDot={{ r: 6 }}
                   />
                 </LineChart>

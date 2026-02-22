@@ -61,7 +61,7 @@ export default function ForgotPasswordScreen({ onBack, onSuccess }: Props) {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full py-3 bg-brandAccent text-white rounded-button text-sm disabled:opacity-50"
+            className="w-full py-3 bg-brandAccent text-white rounded-button text-sm disabled:opacity-50 hover:bg-brandAccentHover transition-colors"
           >
             {loading ? "確認中..." : "次へ"}
           </button>

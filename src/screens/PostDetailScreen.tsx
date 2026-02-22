@@ -201,7 +201,7 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
             />
             <button
               onClick={handleAddComment}
-              className="text-xs px-3 py-2 bg-brandAccent text-white rounded-button"
+              className="text-xs px-3 py-2 bg-brandAccent text-white rounded-button hover:bg-brandAccentHover transition-colors"
             >
               送信
             </button>

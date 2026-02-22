@@ -76,7 +76,7 @@ export default function LoginScreen({ onLoginSuccess, onGoToSignup, onForgotPass
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="w-full py-3 bg-[#FBCFE8] hover:bg-[#F9A8D4] text-white rounded-button text-sm disabled:opacity-50"
+            className="w-full py-3 bg-brandAccent hover:bg-brandAccentHover text-white rounded-button text-sm disabled:opacity-50 transition-colors"
           >
             {loading ? "ログイン中..." : "ログイン"}
           </button>

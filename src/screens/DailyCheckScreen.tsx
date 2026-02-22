@@ -307,7 +307,7 @@ function TemperatureInput({ onSubmit, onSkip }: { onSubmit: (temp: string) => vo
         >
           スキップ
         </button>
-        <button onClick={handleSubmit} className="text-xs px-4 py-2 bg-[#FBCFE8] hover:bg-[#F9A8D4] text-white rounded-button shadow-sm">
+        <button onClick={handleSubmit} className="text-xs px-4 py-2 bg-brandAccent hover:bg-brandAccentHover text-white rounded-button shadow-sm transition-colors">
           決定
         </button>
       </div>

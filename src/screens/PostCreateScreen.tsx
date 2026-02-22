@@ -186,7 +186,7 @@ export default function PostCreateScreen({
 
           <button
             onClick={handleSubmit}
-            className="w-full py-3 bg-[#FBCFE8] hover:bg-[#F9A8D4] text-white rounded-button text-sm"
+            className="w-full py-3 bg-brandAccent hover:bg-brandAccentHover text-white rounded-button text-sm transition-colors"
           >
             {isEditing ? "更新する" : "投稿する"}
           </button>
