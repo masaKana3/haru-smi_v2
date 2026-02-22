@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { CommunityPost, CommunityTopic } from "../types/community";
 import { useStorage } from "../hooks/useStorage";
+import PageHeader from "../components/layout/PageHeader";
 import Card from "../components/layout/Card";
 import SectionTitle from "../components/layout/SectionTitle";
 import { ICONS, DEFAULT_ICON } from "../lib/constants";
@@ -175,16 +176,7 @@ export default function CommunityScreen({
 
   return (
     <div className="w-full min-h-screen">
-      {/* Header */}
-      <div className="sticky top-0 bg-transparent/80 backdrop-blur-sm z-10 border-b border-brandAccentAlt/30">
-        <div className="w-full max-w-sm mx-auto flex items-center justify-between p-4 text-brandText">
-          <button onClick={onBack} className="text-sm hover:opacity-80 transition-opacity">
-            戻る
-          </button>
-          <h1 className="text-md font-semibold text-brandTextStrong">コミュニティ</h1>
-          <div className="w-8"></div>
-        </div>
-      </div>
+      <PageHeader title="コミュニティ" onBack={onBack} />
 
       {/* Content */}
       <div className="w-full max-w-sm mx-auto p-4 md:p-6 space-y-5 pb-20">
