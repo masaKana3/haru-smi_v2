@@ -69,8 +69,8 @@ export default function DailyCheckDetail({
   //------------------------------------------------------------
   if (isFuture) {
     return (
-      <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
-        <div className="w-full max-w-sm bg-white rounded-card p-6 shadow-sm">
+      <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
+        <div className="w-full max-w-sm bg-white/60 border border-white/20 rounded-card p-6 shadow-sm">
           <h2 className="text-md font-semibold mb-4 text-center">
             {selectedDate} の記録
           </h2>
@@ -200,8 +200,8 @@ export default function DailyCheckDetail({
   );
 
   return (
-    <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 pb-24 text-brandText">
-      <div className="w-full max-w-sm bg-white rounded-card p-6 shadow-sm">
+    <div className="w-full min-h-screen flex flex-col items-center p-6 pb-24 text-brandText">
+      <div className="w-full max-w-sm bg-white/60 border border-white/20 rounded-card p-6 shadow-sm">
 
         {/* 上部タイトルと戻る */}
         <div className="flex justify-between items-center mb-6">
@@ -248,7 +248,7 @@ export default function DailyCheckDetail({
                   className={`flex-1 py-3 rounded-button border flex flex-col items-center justify-center gap-1 transition-colors ${
                     bleeding === "無い"
                       ? "bg-brandAccent text-white border-brandAccent"
-                      : "bg-white text-brandText border-brandAccentAlt/50 hover:bg-brandBg"
+                      : "bg-white text-brandText border-brandAccentAlt/50 hover:bg-gray-50"
                   }`}
                 >
                   <span className="text-lg leading-none">🚫</span>
@@ -267,7 +267,7 @@ export default function DailyCheckDetail({
                       className={`flex-1 py-3 rounded-button border flex flex-col items-center justify-center gap-1 transition-colors ${
                         isSelected
                           ? "bg-brandAccent text-white border-brandAccent"
-                          : "bg-white text-brandText border-brandAccentAlt/50 hover:bg-brandBg"
+                          : "bg-white text-brandText border-brandAccentAlt/50 hover:bg-gray-50"
                       }`}
                     >
                       <span className="text-lg leading-none">{icon}</span>

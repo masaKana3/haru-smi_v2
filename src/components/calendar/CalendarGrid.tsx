@@ -103,7 +103,7 @@ export default function CalendarGrid({
   const monthLabel = `${month.getFullYear()}年 ${month.getMonth() + 1}月`;
 
   return (
-    <div className="bg-white rounded-card p-4 shadow-sm">
+    <div className="bg-white/60 border border-white/20 rounded-card p-4 shadow-sm">
       <div className="flex items-center justify-between mb-4 gap-2">
         <div className="flex items-center gap-2">
           <button

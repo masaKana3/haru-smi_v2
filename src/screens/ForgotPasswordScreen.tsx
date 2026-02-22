@@ -35,8 +35,8 @@ export default function ForgotPasswordScreen({ onBack, onSuccess }: Props) {
   };
 
   return (
-    <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
-      <div className="w-full max-w-sm bg-white rounded-card p-6 shadow-sm space-y-6">
+    <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
+      <div className="w-full max-w-sm bg-white/60 border border-white/20 rounded-card p-6 shadow-sm space-y-6">
         <div className="text-center space-y-2">
           <h2 className="text-lg font-semibold">パスワードの再設定</h2>
           <p className="text-xs text-brandMuted">

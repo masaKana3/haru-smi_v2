@@ -15,7 +15,7 @@ export default function Card<T extends React.ElementType = "div">({
   const Component = (as || "div") as React.ElementType;
   return (
     <Component
-      className={`bg-white rounded-card p-6 shadow-sm ${className}`}
+      className={`bg-white/60 border border-white/20 rounded-card p-6 shadow-sm ${className}`}
       {...rest}
     >
       {children}

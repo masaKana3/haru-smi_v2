@@ -9,7 +9,7 @@ type Props = {
 
 export default function CommunityPreviewCard({ onOpen, children }: Props) {
   return (
-    <Card className="bg-white p-4 shadow-sm space-y-3">
+    <Card className="p-4 shadow-sm space-y-3">
       <div className="flex items-center justify-between">
         <SectionTitle className="mb-0">今日のテーマ</SectionTitle>
         <button

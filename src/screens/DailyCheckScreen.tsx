@@ -72,8 +72,8 @@ export default function DailyCheckScreen({ dailyItems, onComplete, onCancel }: P
 
   if (!dailyItems || dailyItems.length === 0) {
     return (
-      <div className="w-full h-screen bg-brandBg flex flex-col items-center justify-center text-brandText">
-        <div className="bg-white rounded-card p-6 shadow-sm text-sm">
+      <div className="w-full h-screen flex flex-col items-center justify-center text-brandText">
+        <div className="bg-white/60 border border-white/20 rounded-card p-6 shadow-sm text-sm">
           デイリーチェック項目がまだ設定されていません。
         </div>
         {onCancel && (
@@ -230,7 +230,7 @@ export default function DailyCheckScreen({ dailyItems, onComplete, onCancel }: P
   };
 
   return (
-    <div className="w-full h-screen bg-brandBg flex flex-col items-center text-brandText">
+    <div className="w-full h-screen flex flex-col items-center text-brandText">
       <div className="w-full max-w-sm flex-1 flex flex-col p-4 overflow-hidden">
         {/* ヘッダー */}
         <div className="mb-3 flex items-center justify-between">
@@ -307,7 +307,7 @@ function TemperatureInput({ onSubmit, onSkip }: { onSubmit: (temp: string) => vo
         >
           スキップ
         </button>
-        <button onClick={handleSubmit} className="text-xs px-4 py-2 bg-brandAccent text-white rounded-button shadow-sm">
+        <button onClick={handleSubmit} className="text-xs px-4 py-2 bg-[#FBCFE8] hover:bg-[#F9A8D4] text-white rounded-button shadow-sm">
           決定
         </button>
       </div>

@@ -73,7 +73,7 @@ export default function DiaryScreen({
   ];
 
   return (
-    <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
+    <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
       <div className="w-full max-w-sm space-y-4">
         <div className="flex items-center justify-between">
           <button
@@ -86,7 +86,7 @@ export default function DiaryScreen({
           <div className="w-10" />
         </div>
 
-        <div className="bg-white rounded-card p-4 shadow-sm space-y-3">
+        <div className="bg-white/60 border border-white/20 rounded-card p-4 shadow-sm space-y-3">
           <div className="text-sm font-semibold">日記の検索・絞り込み</div>
           <div className="pt-1 space-y-3">
             <input

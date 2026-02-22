@@ -38,8 +38,8 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
 
   if (!post) {
     return (
-      <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
-        <div className="w-full max-w-sm bg-white rounded-card p-6 shadow-sm space-y-4">
+      <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
+        <div className="w-full max-w-sm bg-white/60 border border-white/20 rounded-card p-6 shadow-sm space-y-4">
           <button
             onClick={onBack}
             className="text-sm text-brandAccent hover:opacity-80 transition-opacity"
@@ -136,7 +136,7 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
   const isAuthor = post.user_id === currentUserId;
 
   return (
-    <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
+    <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
       <div className="w-full max-w-sm space-y-4">
         <div className="flex items-center justify-between">
           <button
@@ -164,7 +164,7 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
           )}
         </div>
 
-        <div className="bg-white rounded-card p-4 shadow-sm space-y-2">
+        <div className="bg-white/60 border border-white/20 rounded-card p-4 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-xs text-brandMuted">
             <span>{post.type === "diary" ? "日記" : "テーマ投稿"}</span>
             <span className="px-2 py-[2px] bg-brandAccentAlt/20 rounded-full text-[11px]">
@@ -188,7 +188,7 @@ export default function PostDetailScreen({ postId, onBack, onEdit, onDeleted, cu
           </div>
         </div>
 
-        <div className="bg-white rounded-card p-4 shadow-sm space-y-3">
+        <div className="bg-white/60 border border-white/20 rounded-card p-4 shadow-sm space-y-3">
           <div className="text-sm font-semibold">コメント</div>
 
           <div className="flex items-start gap-2">

@@ -59,7 +59,7 @@ export default function ThreadScreen({
 
   if (loading) {
     return (
-       <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
+       <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
         <div className="w-full max-w-sm pt-20 text-center">
           <p>読み込み中...</p>
         </div>
@@ -69,8 +69,8 @@ export default function ThreadScreen({
 
   if (!topic) {
     return (
-      <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
-        <div className="w-full max-w-sm bg-white rounded-card p-6 shadow-sm space-y-4">
+      <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
+        <div className="w-full max-w-sm bg-white/60 border border-white/20 rounded-card p-6 shadow-sm space-y-4">
           <button
             onClick={onBack}
             className="text-sm text-brandAccent hover:opacity-80 transition-opacity"
@@ -84,7 +84,7 @@ export default function ThreadScreen({
   }
 
   return (
-    <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
+    <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
       <div className="w-full max-w-sm space-y-4">
         <div className="flex items-center justify-between">
           <button
@@ -97,7 +97,7 @@ export default function ThreadScreen({
           <div className="w-10" />
         </div>
 
-        <div className="bg-white rounded-card p-4 shadow-sm space-y-2">
+        <div className="bg-white/60 border border-white/20 rounded-card p-4 shadow-sm space-y-2">
           <div className="text-sm font-semibold">テーマ</div>
           <div className="text-xs text-brandMuted leading-relaxed">{topic.title}</div>
           <button

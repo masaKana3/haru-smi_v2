@@ -40,7 +40,7 @@ export default function CommentCard({
   };
 
   return (
-    <div className="w-full bg-brandPanel rounded-card px-3 py-3 space-y-2 flex gap-3">
+    <div className="w-full bg-white/60 border border-white/20 rounded-card px-3 py-3 space-y-2 flex gap-3">
       {/* Avatar */}
       <div
         onClick={handleProfileClick}

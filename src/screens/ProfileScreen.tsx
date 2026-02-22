@@ -90,7 +90,7 @@ export default function ProfileScreen({
   const displayPosts = activeTab === "posts" ? myPosts : likedPosts;
 
   return (
-    <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
+    <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
       <div className="w-full max-w-sm space-y-5">
         <div className="flex items-center justify-between">
           <button
@@ -103,7 +103,7 @@ export default function ProfileScreen({
           <div className="w-10" />
         </div>
 
-        <div className="bg-white rounded-card p-6 shadow-sm text-center space-y-2">
+        <div className="bg-white/60 border border-white/20 rounded-card p-6 shadow-sm text-center space-y-2">
           <div className="w-20 h-20 bg-brandAccentAlt/30 rounded-full mx-auto flex items-center justify-center text-2xl overflow-hidden">
             <img
               src={getAvatarSrc()}

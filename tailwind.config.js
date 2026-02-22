@@ -7,8 +7,8 @@ module.exports = {
     extend: {
       colors: {
         brandBg: "#B9C7D9",
-        brandText: "#4A4A55",
-        brandTextStrong: "#43455A",
+        brandText: "#475569",
+        brandTextStrong: "#475569",
         brandAccent: "#B59DC6",
         brandAccentAlt: "#CDC3D6",
         brandAccentAlt2: "#DAD1DF",

@@ -9,8 +9,8 @@ export default function ResultScreen({ total, onGoDashboard }: ResultScreenProps
   const safeTotal = total ?? 0;
 
   return (
-    <div className="w-full h-screen bg-brandBg flex flex-col items-center p-8 text-brandText">
-      <div className="max-w-sm w-full bg-white rounded-card p-8 shadow-sm text-center">
+    <div className="w-full h-screen flex flex-col items-center p-8 text-brandText">
+      <div className="max-w-sm w-full bg-white/60 border border-white/20 rounded-card p-8 shadow-sm text-center">
         <h2 className="text-[20px] font-semibold mb-6">あなたの更年期指数（SMI）</h2>
 
         <div className="relative w-40 h-40 mx-auto mb-6">

@@ -59,7 +59,7 @@ export default function PostCard({
   return (
     <div
       onClick={onOpen}
-      className="bg-white border border-brandAccentAlt/30 rounded-card p-4 shadow-sm space-y-2 cursor-pointer hover:bg-gray-50 transition-colors"
+      className="bg-white/60 border border-white/20 rounded-card p-4 shadow-sm space-y-2 cursor-pointer hover:bg-gray-50 transition-colors"
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -84,7 +84,7 @@ export default function PostCard({
                 {displayName}
               </span>
               {topic && (
-                <span className="text-[10px] px-2 py-0.5 bg-brandBg border border-brandAccentAlt rounded-full text-brandMuted">
+                <span className="text-[10px] px-2 py-0.5 bg-brandAccent/20 text-brandAccent border border-brandAccent/20 rounded-full">
                   {topic.title}
                 </span>
               )}

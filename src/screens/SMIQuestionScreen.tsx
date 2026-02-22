@@ -66,7 +66,7 @@ export default function SMIQuestionScreen({ onFinish, onCancel }: Props) {
   const currentAnswer = answers[currentItem.id];
 
   return (
-    <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
+    <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
       <div className="w-full max-w-sm">
         {/* 戻るボタン */}
         <div className="mb-4">
@@ -90,7 +90,7 @@ export default function SMIQuestionScreen({ onFinish, onCancel }: Props) {
         </div>
 
         {/* 質問カード */}
-        <div className="bg-white rounded-card p-6 shadow-sm mb-6 min-h-[300px] flex flex-col justify-center items-center text-center">
+        <div className="bg-white/60 border border-white/20 rounded-card p-6 shadow-sm mb-6 min-h-[300px] flex flex-col justify-center items-center text-center">
           <h2 className="text-lg font-semibold mb-8">{currentItem.text}</h2>
           
           <div className="w-full space-y-3">
@@ -155,7 +155,7 @@ function OptionButton({ label, selected, onClick }: { label: string; selected: b
       className={`w-full py-3 rounded-button border transition-all ${
         selected
           ? "bg-brandAccent text-white border-brandAccent shadow-md scale-[1.02]"
-          : "bg-white text-brandText border-brandAccentAlt/30 hover:bg-brandBg"
+          : "bg-white text-brandText border-brandAccentAlt/30 hover:bg-gray-50"
       }`}
     >
       {label}

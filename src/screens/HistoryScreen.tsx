@@ -58,7 +58,7 @@ export default function HistoryScreen({
   };
 
   return (
-    <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
+    <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
       <div className="w-full max-w-sm space-y-4">
         <div className="flex items-center justify-between">
           <button onClick={onBack} className="text-sm text-brandMutedAlt">

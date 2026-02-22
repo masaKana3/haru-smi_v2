@@ -54,7 +54,7 @@ const PostItem: React.FC<{
   };
 
   return (
-    <div className="bg-white border border-brandAccentAlt/30 rounded-card p-4 shadow-sm space-y-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => onOpenPostDetail && onOpenPostDetail(post.id)}>
+    <div className="bg-white/60 border border-white/20 rounded-card p-4 shadow-sm space-y-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => onOpenPostDetail && onOpenPostDetail(post.id)}>
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <img
@@ -174,9 +174,9 @@ export default function CommunityScreen({
   };
 
   return (
-    <div className="w-full min-h-screen bg-brandBg">
+    <div className="w-full min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 bg-brandBg/80 backdrop-blur-sm z-10 border-b border-brandAccentAlt/30">
+      <div className="sticky top-0 bg-transparent/80 backdrop-blur-sm z-10 border-b border-brandAccentAlt/30">
         <div className="w-full max-w-sm mx-auto flex items-center justify-between p-4 text-brandText">
           <button onClick={onBack} className="text-sm hover:opacity-80 transition-opacity">
             戻る
@@ -208,7 +208,7 @@ export default function CommunityScreen({
                 placeholder="新しいお題のタイトル"
                 className="flex-grow p-2 rounded-md text-sm bg-brandInput border-none"
               />
-              <button type="submit" className="px-4 py-2 bg-brandAccent text-white rounded-button text-sm font-semibold hover:opacity-90">
+              <button type="submit" className="px-4 py-2 bg-[#FBCFE8] text-white rounded-button text-sm font-semibold hover:bg-[#F9A8D4]">
                 作成
               </button>
             </form>

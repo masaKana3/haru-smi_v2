@@ -39,8 +39,8 @@ export default function LoginScreen({ onLoginSuccess, onGoToSignup, onForgotPass
   };
 
   return (
-    <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
-      <div className="w-full max-w-sm bg-white rounded-card p-6 shadow-sm space-y-6">
+    <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
+      <div className="w-full max-w-sm bg-white/60 border border-white/20 rounded-card p-6 shadow-sm space-y-6">
         <div className="text-center space-y-2">
           <h2 className="text-lg font-semibold">ログイン</h2>
           <p className="text-xs text-brandMuted">
@@ -76,7 +76,7 @@ export default function LoginScreen({ onLoginSuccess, onGoToSignup, onForgotPass
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="w-full py-3 bg-brandAccent text-white rounded-button text-sm disabled:opacity-50"
+            className="w-full py-3 bg-[#FBCFE8] hover:bg-[#F9A8D4] text-white rounded-button text-sm disabled:opacity-50"
           >
             {loading ? "ログイン中..." : "ログイン"}
           </button>

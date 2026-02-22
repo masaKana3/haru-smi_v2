@@ -31,8 +31,8 @@ export default function SignupScreen({ onSuccess, onCancel }: Props) {
   };
 
   return (
-    <div className="w-full h-screen bg-brandBg flex flex-col items-center justify-center p-6 text-brandText">
-      <div className="w-full max-w-sm bg-white rounded-card p-8 shadow-sm">
+    <div className="w-full h-screen flex flex-col items-center justify-center p-6 text-brandText">
+      <div className="w-full max-w-sm bg-white/60 border border-white/20 rounded-card p-8 shadow-sm">
         <h2 className="text-xl font-semibold mb-6 text-center">新規登録</h2>
 
         {error && (
@@ -69,7 +69,7 @@ export default function SignupScreen({ onSuccess, onCancel }: Props) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-brandAccent text-white rounded-button font-medium disabled:opacity-50"
+            className="w-full py-3 bg-[#FBCFE8] hover:bg-[#F9A8D4] text-white rounded-button font-medium disabled:opacity-50"
           >
             {loading ? "処理中..." : "登録する"}
           </button>

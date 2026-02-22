@@ -87,7 +87,7 @@ export default function SettingsScreen({ onBack, onLogout, onOpenProfile }: Prop
   };
 
   return (
-    <div className="w-full min-h-screen bg-brandBg flex flex-col items-center p-6 text-brandText">
+    <div className="w-full min-h-screen flex flex-col items-center p-6 text-brandText">
       <div className="w-full max-w-sm space-y-5">
         <div className="flex items-center justify-between">
           <button
@@ -100,7 +100,7 @@ export default function SettingsScreen({ onBack, onLogout, onOpenProfile }: Prop
           <div className="w-10" />
         </div>
 
-        <div className="bg-white rounded-card p-6 shadow-sm space-y-6">
+        <div className="bg-white/60 border border-white/20 rounded-card p-6 shadow-sm space-y-6">
           <div className="space-y-2">
             <h3 className="text-sm font-semibold">アカウント設定</h3>
             <button

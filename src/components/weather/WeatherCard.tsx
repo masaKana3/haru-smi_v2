@@ -57,7 +57,7 @@ function buildAdvice(weather: string, pressure: number): string {
 const WeatherCard: React.FC<Props> = ({ data, error }) => {
   if (error) {
     return (
-      <div className="bg-brandPanel rounded-card p-5 shadow-sm text-brandText space-y-2">
+      <div className="bg-white/60 border border-white/20 rounded-card p-5 shadow-sm text-brandText space-y-2">
         <SectionTitle className="mb-1">お天気</SectionTitle>
         <div className="text-sm text-brandMuted">
           Weather unavailable: {error.message}
@@ -68,7 +68,7 @@ const WeatherCard: React.FC<Props> = ({ data, error }) => {
 
   if (!data) {
     return (
-      <div className="bg-brandPanel rounded-card p-5 shadow-sm text-brandText space-y-2">
+      <div className="bg-white/60 border border-white/20 rounded-card p-5 shadow-sm text-brandText space-y-2">
         <SectionTitle className="mb-1">お天気</SectionTitle>
         <div className="text-sm text-brandMuted">天気を取得しています...</div>
       </div>
@@ -81,7 +81,7 @@ const WeatherCard: React.FC<Props> = ({ data, error }) => {
   const cityLabel = "札幌市";
 
   return (
-    <div className="bg-brandPanel rounded-card p-5 shadow-sm text-brandText space-y-3">
+    <div className="bg-white/60 border border-white/20 rounded-card p-5 shadow-sm text-brandText space-y-3">
       <div className="flex items-center gap-3">
         <div className="text-2xl">{data.icon ?? info.emoji}</div>
         <div>
