@@ -379,7 +379,8 @@ export function useStorage() {
     const { data, error } = await supabase
       .from("community_posts")
       .select('*, profiles!community_posts_profile_id_fkey(nickname, avatar_url), community_topics(title), community_likes(count), community_comments(count)')
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(6); // 表示件数を6件に制限
 
     if (error) {
       console.error("Error fetching timeline posts:", error);
@@ -783,17 +784,33 @@ export function useStorage() {
     }
 
     // First delete comments and likes associated with the post
+    // Note: If RLS or other issues prevent these deletes, they might fail silently.
+    // For a more robust solution, these should also be checked.
     await supabase.from('community_comments').delete().eq('post_id', postId);
     await supabase.from('community_likes').delete().eq('post_id', postId);
     
-    // Then delete the post itself
-    const { error } = await supabase.from('community_posts').delete().eq('id', postId);
+    // Then delete the post itself and select the deleted row to confirm.
+    const { data, error } = await supabase
+      .from('community_posts')
+      .delete()
+      .eq('id', postId)
+      .select();
+
     if (error) {
       console.error('Error deleting post:', error);
-      alert(`投稿の削除中にエラーが発生しました: ${error.message}`);
+      alert(`投稿の削除中にデータベースエラーが発生しました: ${error.message}`);
       return false;
     }
-    return true; // 削除成功
+
+    // Check if any row was actually deleted. If not, it's likely an RLS issue.
+    if (!data || data.length === 0) {
+      console.warn(`Post deletion query for post ID ${postId} returned no deleted rows. This may be due to RLS policies or the post being already deleted.`);
+      alert('投稿の削除に失敗しました。権限がないか、投稿がすでに削除されている可能性があります。');
+      return false;
+    }
+
+    console.log(`Successfully deleted ${data.length} post(s).`);
+    return true; // Deletion successful
   }, [isAdmin, getPostById]);
 
   // コメントを削除する

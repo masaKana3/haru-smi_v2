@@ -32,6 +32,8 @@ export function useCommunityNavigation(nav: Navigation) {
 
   // ★コミュニティ：投稿削除後の遷移
   const handlePostDeleted = useCallback(() => {
+    // グローバルイベントを発火して、コミュニティ画面に更新を通知
+    window.dispatchEvent(new CustomEvent('haru:post-deleted'));
     nav.setActivePostId(null);
     nav.goBack("community");
   }, [nav]);

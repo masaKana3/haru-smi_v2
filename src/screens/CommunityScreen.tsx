@@ -138,6 +138,17 @@ export default function CommunityScreen({
 
   useEffect(() => {
     fetchData();
+
+    const handlePostDeleted = () => {
+      console.log("Post deletion event detected, refreshing timeline.");
+      fetchData();
+    };
+    
+    window.addEventListener('haru:post-deleted', handlePostDeleted);
+    
+    return () => {
+      window.removeEventListener('haru:post-deleted', handlePostDeleted);
+    };
   }, [fetchData]);
 
   const handleCreateTopic = async (e: React.FormEvent) => {
@@ -151,9 +162,14 @@ export default function CommunityScreen({
   };
 
   const handleDeletePost = async (postId: string) => {
+    // Optimistically remove the post from the state
+    setTimelinePosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+
     const success = await deletePost(postId);
-    if (success) {
-      fetchData(); // Or optimistically remove the post from state
+    if (!success) {
+      // If deletion fails, revert the change by re-fetching data
+      alert("投稿の削除に失敗しました。データを再読み込みします。");
+      fetchData();
     }
   };
 
@@ -223,7 +239,7 @@ export default function CommunityScreen({
           ) : timelinePosts.length === 0 ? (
             <p className="text-sm text-brandMuted">まだ投稿がありません。</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[650px] overflow-y-auto custom-scrollbar">
               {timelinePosts.map(post => (
                 <PostItem key={post.id} post={post} currentUserId={currentUserId} isUserAdmin={isUserAdmin} onOpenProfile={onOpenProfile} onOpenPostDetail={onOpenPostDetail} onDelete={handleDeletePost} />
               ))}
